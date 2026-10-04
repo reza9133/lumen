@@ -1,0 +1,211 @@
+import { useMemo, useState } from "react";
+import type { KeeperRecord, Position, Vow } from "./chain";
+import { PHASE_LABEL, alias, gen, left, parseWei, phaseOf, short } from "./format";
+import { preview } from "./payout";
+import { KIND_LABEL, URL_HINT, canJudgeEarly, canRelease, evidenceKind, isEvidenceUrl, normalizeUrl } from "./evidence";
+
+type Props = {
+  vow: Vow;
+  now: number;
+  me: string | null;
+  pos: Position | null;
+  record: KeeperRecord | null;
+  onClose: () => void;
+  onBack: (side: "faith" | "doubt", wei: bigint) => void;
+  onJudge: () => void;
+  onChallenge: (url: string) => void;
+  onClaim: () => void;
+  onRelease: () => void;
+  onInvalid: (msg: string) => void;
+  onNotice: (msg: string) => void;
+};
+
+export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, onJudge, onChallenge, onClaim, onRelease, onInvalid, onNotice }: Props) {
+  const [amount, setAmount] = useState("0.1");
+  const [counter, setCounter] = useState("");
+  const phase = phaseOf(v.state, v.deadline, now);
+  const total = BigInt(v.faith) + BigInt(v.doubt);
+  const faithPct = total > 0n ? Number((BigInt(v.faith) * 100n) / total) : 50;
+  const mine = me !== null && me.toLowerCase() === v.keeper.toLowerCase();
+  const faithRoom = (() => {
+    const room = BigInt(v.faith_cap) - BigInt(v.faith);
+    return room > 0n ? room : 0n;
+  })();
+
+  // What the typed amount would return in each outcome, given the pools as they are right now.
+  const typed = parseWei(amount);
+  const sheet = useMemo(() => {
+    if (typed === null || typed < 10n ** 16n) return null;
+    const mineNow = { faith: BigInt(pos?.faith ?? "0"), doubt: BigInt(pos?.doubt ?? "0") };
+    return {
+      faith: preview(v, mineNow, "faith", typed),
+      doubt: preview(v, mineNow, "doubt", typed),
+    };
+  }, [typed, pos, v.stake, v.faith, v.doubt]);
+  const span = v.deadline - v.created;
+  const elapsed = span > 0 ? Math.min(100, Math.max(0, ((now - v.created) / span) * 100)) : 100;
+
+  const copyLink = async () => {
+    const link = `${location.origin}${location.pathname}#vow=${v.id}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      onNotice("Link copied.");
+    } catch {
+      onInvalid(`Copy this link: ${link}`);
+    }
+  };
+
+  const back = (side: "faith" | "doubt") => {
+    const wei = parseWei(amount);
+    if (wei === null || wei < 10n ** 16n) return onInvalid("Enter an amount of at least 0.01 GEN.");
+    if (side === "faith" && wei > faithRoom) {
+      return onInvalid(
+        faithRoom === 0n
+          ? "Faith on this vow is full. It is capped at half of the stake."
+          : `Faith is capped at half of the stake. Room left: ${gen(faithRoom.toString())} GEN.`,
+      );
+    }
+    onBack(side, wei);
+  };
+
+  const kind = evidenceKind(v.url);
+  const early = canJudgeEarly(v, now);
+  const open = v.state === 0;
+  const canChallenge = open && now < v.deadline && pos !== null && BigInt(pos.doubt) > 0n && !pos.challenged;
+  const challenge = () => {
+    if (!isEvidenceUrl(counter)) return onInvalid(URL_HINT);
+    onChallenge(normalizeUrl(counter) ?? counter.trim());
+    setCounter("");
+  };
+
+  return (
+    <aside className="drawer" aria-live="polite">
+      <div className="topbtns">
+        <button className="close" onClick={copyLink} aria-label="Copy a link to this vow">Copy link</button>
+        <button className="close" onClick={onClose} aria-label="Close details">Close</button>
+      </div>
+      <span className={`pill p-${phase}`}>{PHASE_LABEL[phase]}</span>
+      <blockquote>{v.text}</blockquote>
+
+      <p className="meta">
+        Kept by <strong>{alias(v.keeper)}</strong> <span className="addr">{short(v.keeper)}</span>{mine ? " (you)" : ""}
+      </p>
+      {record && (record.kept > 0 || record.broken > 0) && (
+        <p className="meta">Record: {record.kept} kept ({gen(record.kept_stake)} GEN staked), {record.broken} broken. Current streak {record.streak}, best {record.best}.</p>
+      )}
+      <p className="meta">{phase === "burning" ? left(v.deadline, now) : `Deadline ${new Date(v.deadline * 1000).toLocaleString()}`}</p>
+      {phase === "burning" && (
+        <div className="timebar" role="progressbar" aria-label="Time elapsed" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(elapsed)}>
+          <i style={{ width: `${elapsed}%` }} />
+        </div>
+      )}
+      <p className="meta"><a href={v.url} target="_blank" rel="noreferrer">Open the evidence page</a> ({KIND_LABEL[kind]})</p>
+      {v.counters.length > 0 && (
+        <p className="meta">
+          Counter-evidence from doubters:{" "}
+          {v.counters.map((u, i) => (
+            <span key={u}>{i > 0 ? ", " : ""}<a href={u} target="_blank" rel="noreferrer">page {i + 1}</a></span>
+          ))}
+        </p>
+      )}
+
+      <div className="pools">
+        <div className="split" role="img" aria-label={`Faith ${faithPct} percent, doubt ${100 - faithPct} percent`}>
+          <i style={{ width: `${faithPct}%` }} />
+        </div>
+        <div className="row"><span>Faith {gen(v.faith)} GEN</span><span>Doubt {gen(v.doubt)} GEN</span></div>
+        <p className="meta">Keeper stake {gen(v.stake)} GEN. Room for faith: {gen(faithRoom.toString())} GEN.</p>
+      </div>
+
+      {v.note && <p className="verdict">{v.note}</p>}
+
+      {phase === "burning" && (
+        <div className="act">
+          {mine ? (
+            <p className="meta">Keepers cannot back their own vow. Share the link so others can.</p>
+          ) : (
+            <>
+              <label>Amount in GEN
+                <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+              </label>
+              <div className="two">
+                <button onClick={() => back("faith")} disabled={!me}>Back this vow</button>
+                <button className="ghost" onClick={() => back("doubt")} disabled={!me}>Doubt this vow</button>
+              </div>
+              {BigInt(v.doubt) === 0n && <p className="meta">Nobody doubts this vow yet. If it breaks while that stays true, faith backing is burned, not refunded.</p>}
+              {sheet && (
+                <div className="preview" aria-label="What this amount would return">
+                  <div className="cols">
+                    <span />
+                    <b>Back</b>
+                    <b>Doubt</b>
+                  </div>
+                  <div className="cols"><span>If kept</span><span>{gen(sheet.faith.kept)}</span><span>{gen(sheet.doubt.kept)}</span></div>
+                  <div className="cols"><span>If broken</span><span>{gen(sheet.faith.broken)}</span><span>{gen(sheet.doubt.broken)}</span></div>
+                  <div className="cols"><span>If unclear</span><span>{gen(sheet.faith.unclear)}</span><span>{gen(sheet.doubt.unclear)}</span></div>
+                  <p className="meta">GEN you would receive, counting anything you already have on this vow. Later backing changes the split.</p>
+                </div>
+              )}
+              {!me && <p className="meta">Connect a wallet to take a side.</p>}
+            </>
+          )}
+          {early && (
+            <>
+              <button className="ghost" onClick={onJudge} disabled={!me}>Ask validators to confirm early</button>
+              <p className="meta">Nobody doubts this vow, so it can be confirmed before the deadline. An early check can only confirm a vow, never break it.</p>
+            </>
+          )}
+          {canChallenge && <ChallengeForm value={counter} onChange={setCounter} onSubmit={challenge} />}
+          <details className="rules">
+            <summary>What happens at the deadline</summary>
+            <p>Faith on a vow is capped at half of the stake, so a keeper cannot profit by letting their own vow fail.</p>
+            <p>If the vow is kept, the keeper gets the stake back and faith backers share the doubt pool.</p>
+            <p>If it is broken, half of the stake is burned. The other half and the faith pool go to the doubters.</p>
+            <p>If it is broken and nobody doubted it, the whole stake and all faith backing are burned. Faith backers get nothing back.</p>
+            <p>If the vow is too vague to judge, everyone is refunded.</p>
+          </details>
+        </div>
+      )}
+
+      {phase === "due" && (
+        <div className="act">
+          <button onClick={onJudge} disabled={!me}>Ask validators to judge</button>
+          {canRelease(v, now) && (
+            <>
+              <button className="ghost" onClick={onRelease} disabled={!me}>Release all stakes</button>
+              <p className="meta">Thirty days have passed without a verdict. Releasing closes the vow as unclear and everyone can claim a full refund.</p>
+            </>
+          )}
+          <p className="meta">
+            {v.tries > 0
+              ? `The evidence page could not be read on ${v.tries} attempt${v.tries > 1 ? "s" : ""}. Retries are an hour apart. After three, the vow counts as broken.`
+              : "Validators will each read the evidence page and vote. This takes a minute or two."}
+          </p>
+          {!me && <p className="meta">Connect a wallet to request a verdict.</p>}
+        </div>
+      )}
+
+      {(phase === "kept" || phase === "broken" || phase === "unclear") && pos && (
+        <div className="act">
+          {BigInt(pos.payout) > 0n && !pos.claimed && <button onClick={onClaim}>Claim {gen(pos.payout)} GEN</button>}
+          {pos.claimed && <p className="meta">You have claimed your payout.</p>}
+          {BigInt(pos.payout) === 0n && (BigInt(pos.faith) > 0n || BigInt(pos.doubt) > 0n || mine) && (
+            <p className="meta">Nothing is owed to this address.</p>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function ChallengeForm(p: { value: string; onChange: (v: string) => void; onSubmit: () => void }) {
+  return (
+    <div className="challenge">
+      <label>Add a page that shows the vow failed
+        <input value={p.value} onChange={(e) => p.onChange(e.target.value)} placeholder="https://example.com/what-actually-happened" />
+      </label>
+      <button className="ghost" onClick={p.onSubmit}>Submit counter-evidence</button>
+      <p className="meta">One page per doubter. Validators treat it as a claim and only use it if it gives concrete facts that contradict the keeper's page.</p>
+    </div>
+  );
+}
