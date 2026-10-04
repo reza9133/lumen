@@ -18,9 +18,10 @@ type Props = {
   onRelease: () => void;
   onInvalid: (msg: string) => void;
   onNotice: (msg: string) => void;
+  onConnect: () => void;
 };
 
-export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, onJudge, onChallenge, onClaim, onRelease, onInvalid, onNotice }: Props) {
+export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, onJudge, onChallenge, onClaim, onRelease, onInvalid, onNotice, onConnect }: Props) {
   const [amount, setAmount] = useState("0.1");
   const [counter, setCounter] = useState("");
   const phase = phaseOf(v.state, v.deadline, now);
@@ -146,7 +147,7 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
                   <p className="meta">GEN you would receive, counting anything you already have on this vow. Later backing changes the split.</p>
                 </div>
               )}
-              {!me && <p className="meta">Connect a wallet to take a side.</p>}
+              {!me && <button className="ghost" onClick={onConnect}>Connect a wallet to take a side</button>}
             </>
           )}
           {early && (
@@ -181,7 +182,7 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
               ? `The evidence page could not be read on ${v.tries} attempt${v.tries > 1 ? "s" : ""}. Retries are an hour apart. After three, the vow counts as broken.`
               : "Validators will each read the evidence page and vote. This takes a minute or two."}
           </p>
-          {!me && <p className="meta">Connect a wallet to request a verdict.</p>}
+          {!me && <button className="ghost" onClick={onConnect}>Connect a wallet to request a verdict</button>}
         </div>
       )}
 

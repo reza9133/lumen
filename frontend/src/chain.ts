@@ -1,5 +1,9 @@
 import * as sdk from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
+import { getActiveProvider } from "./eip6963";
+
+export const CHAIN = studionet;
+export const NETWORK_NAME = "studionet";
 
 export const CONTRACT = (import.meta.env.VITE_LUMEN_ADDRESS ?? "") as `0x${string}`;
 
@@ -78,27 +82,14 @@ export async function syncClock() {
   }
 }
 
+// A signing client for `addr`, built on the wallet the person picked (not whichever extension owns
+// window.ethereum).
 export async function makeWallet(addr: string) {
-  const eth = (window as any).ethereum;
-  const client: any = sdk.createClient({ chain: studionet, account: addr as `0x${string}`, provider: eth });
-  await client.connect("studionet");
+  const provider = getActiveProvider();
+  if (!provider) throw new Error("No wallet is connected.");
+  const client: any = sdk.createClient({ chain: studionet, account: addr as `0x${string}`, provider: provider as any });
+  await client.connect(NETWORK_NAME);
   return { client, addr };
-}
-
-export async function connect() {
-  const eth = (window as any).ethereum;
-  if (!eth) throw new Error("No browser wallet found. Install one such as MetaMask.");
-  const [addr] = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-  return makeWallet(addr);
-}
-
-// Calls `fn` with the new account (or null when the wallet is locked or disconnected). Returns an unsubscribe.
-export function onAccountChange(fn: (addr: string | null) => void): () => void {
-  const eth = (window as any).ethereum;
-  if (!eth?.on) return () => {};
-  const handler = (accounts: string[]) => fn(accounts?.[0] ?? null);
-  eth.on("accountsChanged", handler);
-  return () => eth.removeListener?.("accountsChanged", handler);
 }
 
 // Messages the contract can raise, used to explain a transaction that was decided as an error.

@@ -160,3 +160,63 @@ select option { background: var(--ink); }
   .tools select { width: 100%; }
   .topbtns { top: 10px; right: 10px; }
 }
+
+/* wallet */
+.wallet-btn, .wallet-chip { display: inline-flex; align-items: center; gap: 8px; }
+.wallet-chip { padding: 8px 14px; font-weight: 500; font-size: 14px; }
+.wallet-chip:hover:not(:disabled) { border-color: var(--gold); }
+.wallet-chip.warn { border-color: var(--ember); }
+.wallet-chip .addr { color: var(--mist); }
+.wallet-chip .streak { padding: 1px 8px; border-radius: 999px; background: rgba(255, 226, 154, 0.14); color: var(--gold); font-size: 12px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mist); flex: none; }
+.dot.ok { background: #7ddc9a; box-shadow: 0 0 10px rgba(125, 220, 154, 0.7); }
+.dot.warn { background: var(--ember); animation: pulse 1.1s infinite; }
+
+.modal-scrim { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(4, 5, 16, 0.62); backdrop-filter: blur(5px); animation: fade 0.2s; }
+.dialog.modal { position: relative; max-height: 90vh; overflow-y: auto; outline: none; animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+.modal-x { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; padding: 0; display: grid; place-items: center; background: transparent; color: var(--mist); border: 1px solid var(--line); }
+.modal-x:hover:not(:disabled) { color: var(--paper); box-shadow: none; border-color: var(--paper); }
+.dialog.modal h2 { padding-right: 40px; }
+.dialog.modal > .meta { margin-top: -8px; }
+.modal-body { display: grid; }
+.stack { display: grid; gap: 12px; }
+.center { text-align: center; }
+.btn-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 999px; background: var(--amber); color: #2a1600; font-weight: 600; text-decoration: none; }
+
+.picker { display: grid; gap: 8px; }
+.pick { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; text-align: left; background: rgba(8, 10, 26, 0.5); color: var(--paper); border: 1px solid var(--line); border-radius: 16px; font-weight: 500; }
+.pick:hover:not(:disabled) { border-color: var(--gold); box-shadow: none; background: rgba(255, 226, 154, 0.06); }
+.pick img { border-radius: 8px; }
+.pick span { flex: 1; }
+.pick svg { color: var(--mist); transition: transform 0.15s; }
+.pick:hover:not(:disabled) svg { transform: translateX(2px); color: var(--gold); }
+
+.notice { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(243, 233, 210, 0.04); font-size: 13px; color: var(--mist); }
+.notice.warn { border-color: rgba(255, 180, 84, 0.5); background: rgba(255, 180, 84, 0.08); color: var(--paper); }
+.notice.error { border-color: rgba(255, 106, 61, 0.55); background: rgba(255, 106, 61, 0.08); color: var(--paper); }
+.notice-icon { flex: none; margin-top: 2px; }
+.notice strong { display: block; margin-bottom: 4px; font-weight: 600; }
+.notice-text { display: grid; gap: 8px; line-height: 1.5; }
+.notice-text p { margin: 0; }
+.notice-text ol { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+
+.info-card { padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(8, 10, 26, 0.45); }
+.info-card .label { margin: 0 0 6px; color: var(--mist); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.info-card .meta { margin: 4px 0 0; }
+.big { margin: 0; font: 500 24px/1.2 var(--serif); }
+.big small { font: 400 14px var(--sans); color: var(--mist); }
+.status-line { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 14px; }
+.addr-row { display: flex; align-items: flex-start; gap: 6px; }
+.addr-row code { word-break: break-all; font-size: 13px; }
+.icon-btn { flex: none; padding: 4px; display: grid; place-items: center; background: transparent; color: var(--mist); border: 0; border-radius: 8px; }
+.icon-btn:hover:not(:disabled) { color: var(--paper); background: rgba(243, 233, 210, 0.08); box-shadow: none; }
+.actions { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+button.danger { color: var(--ember); }
+button.danger:hover:not(:disabled) { border-color: var(--ember); }
+
+@media (max-width: 720px) {
+  .wallet-chip .who, .wallet-chip .streak { display: none; }
+  .modal-scrim { place-items: end center; padding: 12px; }
+}

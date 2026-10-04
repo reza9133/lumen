@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  CONTRACT, connect, makeWallet, nowSec, onAccountChange, readAll, readPosition, readRecord, send, syncClock,
+  CONTRACT, makeWallet, nowSec, readAll, readPosition, readRecord, send, syncClock,
   type KeeperRecord, type Position, type Stats, type Vow,
 } from "./chain";
 import { createSky } from "./sky";
@@ -8,6 +8,8 @@ import { PHASE_LABEL, alias, gen, short, type Phase } from "./format";
 import Drawer from "./Drawer";
 import Ledger from "./Ledger";
 import { AboutDialog, LightDialog } from "./Dialogs";
+import WalletPanel from "./WalletPanel";
+import { useWallet } from "./useWallet";
 
 type Toast = { kind: "ok" | "err" | "busy"; msg: string };
 type Tip = { id: number; x: number; y: number } | null;
@@ -20,7 +22,18 @@ export default function App() {
   const [vows, setVows] = useState<Vow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [sel, setSel] = useState<number | null>(null);
-  const [wallet, setWallet] = useState<{ client: any; addr: string } | null>(null);
+  const w = useWallet();
+  // The signing client is built once the wallet is on the right network, and rebuilt when the account changes.
+  const [client, setClient] = useState<any>(null);
+  useEffect(() => {
+    let live = true;
+    setClient(null);
+    if (!w.address || !w.chainOk) return undefined;
+    makeWallet(w.address).then((x) => { if (live) setClient(x.client); }).catch(() => {});
+    return () => { live = false; };
+  }, [w.address, w.chainOk]);
+  const wallet = useMemo(() => (w.address && client ? { client, addr: w.address } : null), [w.address, client]);
+  useEffect(() => { if (!w.address) setMineOnly(false); }, [w.address]);
   const [pos, setPos] = useState<Position | null>(null);
   const [record, setRecord] = useState<KeeperRecord | null>(null);
   const [now, setNow] = useState(nowSec());
@@ -67,7 +80,7 @@ export default function App() {
   useEffect(() => { if (stats) sky.current?.setAsh(stats.embers); }, [stats]);
   useEffect(() => sky.current?.setSelected(sel), [sel]);
   useEffect(() => sky.current?.setFilter(filter), [filter]);
-  useEffect(() => sky.current?.setOwner(mineOnly && wallet ? wallet.addr : null), [mineOnly, wallet]);
+  useEffect(() => sky.current?.setOwner(mineOnly && w.address ? w.address : null), [mineOnly, w.address]);
   useEffect(() => {
     const read = () => {
       const m = /^#vow=(\d+)$/.exec(location.hash);
@@ -93,13 +106,6 @@ export default function App() {
     syncClock().then(() => setNow(nowSec()));
   }, []);
   useEffect(() => {
-    if (!wallet) return;
-    return onAccountChange((addr) => {
-      if (!addr) return setWallet(null);
-      makeWallet(addr).then(setWallet).catch(() => setWallet(null));
-    });
-  }, [wallet === null]);
-  useEffect(() => {
     refresh();
     const a = setInterval(refresh, 12000);
     const b = setInterval(() => setNow(nowSec()), 1000);
@@ -110,13 +116,13 @@ export default function App() {
   const keeper = v?.keeper ?? null;
   // Clear on a change of vow or account only. A periodic refresh must not blank the panel, and an
   // answer that arrives after the selection moved on is dropped.
-  useEffect(() => { setPos(null); }, [sel, wallet]);
+  useEffect(() => { setPos(null); }, [sel, w.address]);
   useEffect(() => {
-    if (sel === null || !wallet) return;
+    if (sel === null || !w.address) return;
     let live = true;
-    readPosition(sel, wallet.addr).then((p) => { if (live) setPos(p); }).catch(() => {});
+    readPosition(sel, w.address).then((p) => { if (live) setPos(p); }).catch(() => {});
     return () => { live = false; };
-  }, [sel, wallet, vows]);
+  }, [sel, w.address, vows]);
   useEffect(() => { setRecord(null); }, [keeper]);
   useEffect(() => {
     if (!keeper) return;
@@ -126,7 +132,15 @@ export default function App() {
   }, [keeper, vows]);
 
   const run = async (busy: string, done: string, fn: string, args: unknown[], value?: bigint) => {
-    if (!wallet) return setToast({ kind: "err", msg: "Connect a wallet first." });
+    if (!w.address) {
+      w.openModal();
+      return setToast({ kind: "err", msg: "Connect a wallet first." });
+    }
+    if (!w.chainOk) {
+      w.openModal();
+      return setToast({ kind: "err", msg: "Switch your wallet to the GenLayer network first." });
+    }
+    if (!wallet) return setToast({ kind: "err", msg: "Your wallet is still getting ready. Try again in a moment." });
     setToast({ kind: "busy", msg: busy });
     try {
       await send(wallet.client, fn, args, value);
@@ -137,7 +151,7 @@ export default function App() {
     }
   };
 
-  const mine = wallet ? wallet.addr.toLowerCase() : null;
+  const mine = w.address ? w.address.toLowerCase() : null;
   const shown = useMemo(
     () => (mineOnly && mine ? vows.filter((x) => x.keeper.toLowerCase() === mine) : vows),
     [vows, mineOnly, mine],
@@ -166,20 +180,7 @@ export default function App() {
         )}
         <div className="head-actions">
           <button className="ghost" onClick={() => setDialog("about")}>How it works</button>
-          <button
-            className="ghost"
-            title={wallet ? "Click to disconnect" : undefined}
-            onClick={async () => {
-              if (wallet) {
-                setWallet(null);
-                setMineOnly(false);
-                return;
-              }
-              try { setWallet(await connect()); } catch (e: any) { setToast({ kind: "err", msg: e?.message ?? String(e) }); }
-            }}
-          >
-            {wallet ? `${alias(wallet.addr)} ${short(wallet.addr)}` : "Connect wallet"}
-          </button>
+          <WalletPanel wallet={w} />
         </div>
       </header>
 
@@ -213,7 +214,7 @@ export default function App() {
             </button>
           ))}
         </div>
-        {wallet && (
+        {w.address && (
           <div className="seg" role="group" aria-label="Owner">
             <button className={mineOnly ? "on" : ""} aria-pressed={mineOnly} onClick={() => setMineOnly(!mineOnly)}>My vows</button>
           </div>
@@ -244,9 +245,10 @@ export default function App() {
         <Drawer
           vow={v}
           now={now}
-          me={wallet?.addr ?? null}
+          me={w.address}
           pos={pos}
           record={record}
+          onConnect={w.openModal}
           onClose={() => pick(null)}
           onInvalid={(msg) => setToast({ kind: "err", msg })}
           onNotice={(msg) => setToast({ kind: "ok", msg })}
