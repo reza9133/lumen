@@ -9,7 +9,10 @@ import Drawer from "./Drawer";
 import Ledger from "./Ledger";
 import { AboutDialog, LightDialog } from "./Dialogs";
 import WalletPanel from "./WalletPanel";
+import { GitHubIcon } from "./icons";
 import { useWallet } from "./useWallet";
+
+const REPO_URL = "https://github.com/reza9133/lumen";
 
 type Toast = { kind: "ok" | "err" | "busy"; msg: string };
 type Tip = { id: number; x: number; y: number } | null;
@@ -166,8 +169,11 @@ export default function App() {
 
       <header className="bar">
         <div className="brand">
-          <h1>Lumen</h1>
-          <p>Vows the validators remember.</p>
+          <img className="logo" src="/lumen-logo.svg" alt="" width={56} height={56} />
+          <div>
+            <h1>Lumen</h1>
+            <p>Vows the validators remember.</p>
+          </div>
         </div>
         {stats && (
           <dl className="tally">
@@ -180,6 +186,8 @@ export default function App() {
         )}
         <div className="head-actions">
           <button className="ghost" onClick={() => setDialog("about")}>How it works</button>
+          <a className="ghost-link" href="/docs.html">Docs</a>
+          <a className="ghost-link icon" href={REPO_URL} target="_blank" rel="noreferrer noopener" aria-label="Lumen on GitHub" title="Lumen on GitHub"><GitHubIcon /></a>
           <WalletPanel wallet={w} />
         </div>
       </header>

@@ -1,9 +1,14 @@
+<p align="center"><img src="docs/lumen-logo.svg" alt="Lumen logo" width="120" /></p>
+
+<p align="center"><a href="https://github.com/reza9133/lumen">GitHub</a> · <a href="frontend/docs.html">Documentation page</a></p>
+
 # Lumen
 
 Public vows, judged by validators. Write a promise, stake GEN behind it and point to the page that will prove it. After the deadline every GenLayer validator reads that page and rules whether the vow was kept. Friends back it with faith, skeptics bet against it, and every broken vow sends embers drifting down the sky.
 
 - `contracts/lumen.py` is the Intelligent Contract.
 - `frontend/` is a Vite and React app. Each vow is a paper lantern in a night sky, with a ledger view, filters, keeper records and a details drawer.
+- `frontend/docs.html` is the project documentation page. It ships with the app: open `/docs.html` on the dev server or the deployed site (the app header links to it).
 - `tests/direct/` holds in-memory contract tests (`test_hardening.py` and `test_economics.py` need no VM).
 
 ## How it works
