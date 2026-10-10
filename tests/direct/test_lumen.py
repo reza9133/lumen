@@ -7,8 +7,8 @@ import json
 import time
 
 from conftest import (
-    CONTRACT, COUNTER_URL, GEN, PROOF_URL, back, hexof, judge, make_vow, mock_counter, mock_page, mock_verdict, pay,
-    sender, warp_later,
+    BAD_PAGE, CONTRACT, COUNTER_URL, GEN, GOOD_PAGE, PROOF_URL, REVIEW_WAIT, back, hexof, judge, make_vow, mock_counter,
+    mock_counter_verdict, mock_page, mock_verdict, pay, propose, sender, settle, warp_later,
 )
 
 
@@ -124,7 +124,7 @@ def test_cannot_judge_before_deadline(direct_vm, direct_deploy, direct_alice):
     c = deploy(direct_deploy)
     vid = make_vow(c, direct_vm, direct_alice)
     direct_vm.sender = direct_alice
-    with direct_vm.expect_revert("deadline has not passed"):
+    with direct_vm.expect_revert("halfway"):
         c.judge(vid)
 
 
@@ -219,7 +219,9 @@ def test_unreadable_page_allows_retries_then_breaks(direct_vm, direct_deploy, di
     warp_later(direct_vm, 3600 + 120 + 2 * 3700)
     c.judge(vid)
     row = json.loads(c.get_vow(vid))
-    assert row["state"] == 2 and "unreadable" in row["note"]
+    assert row["state"] == 4 and row["proposed"] == 2 and "unreadable" in row["note"]  # proposed, not yet final
+    settle(c, direct_vm, vid, 3600 + 120 + 2 * 3700 + 1300)
+    assert json.loads(c.get_vow(vid))["state"] == 2
 
 
 def test_judged_vow_cannot_be_judged_again(direct_vm, direct_deploy, direct_alice):
@@ -264,7 +266,7 @@ def test_validators_agree_on_the_verdict_only(direct_vm, direct_deploy, direct_a
 
     # a different verdict: rejected
     direct_vm.clear_mocks()
-    mock_page(direct_vm, "y" * 400)
+    mock_page(direct_vm, GOOD_PAGE)
     mock_verdict(direct_vm, "BROKEN")
     assert direct_vm.run_validator() is False
 
@@ -350,14 +352,16 @@ def test_counter_evidence_reaches_the_judges(direct_vm, direct_deploy, direct_al
     sender(direct_vm, direct_charlie)
     c.challenge(vid, COUNTER_URL)
 
-    mock_page(direct_vm, "x" * 400)
+    mock_page(direct_vm, GOOD_PAGE)
     mock_counter(direct_vm)
+    mock_verdict(direct_vm, "FULFILLED")
     # This mock only matches when the prompt carries the counter page.
-    direct_vm.mock_llm(r'<counter n="1">', json.dumps(json.dumps({"verdict": "BROKEN", "note": "The archive contradicts the page."})))
+    mock_counter_verdict(direct_vm)
     warp_later(direct_vm, 3600 + 120)
     sender(direct_vm, direct_alice)
     c.judge(vid)
-    assert json.loads(c.get_vow(vid))["state"] == 2
+    # Both pages are editable by their owners, so the page cannot overturn the keeper's: nobody is slashed.
+    assert json.loads(c.get_vow(vid))["state"] == 3
 
 
 def test_unreadable_counter_page_is_ignored(direct_vm, direct_deploy, direct_alice, direct_charlie):
@@ -386,7 +390,7 @@ def test_early_judging_confirms_but_never_breaks(direct_vm, direct_deploy, direc
 
     # Past halfway, but the page does not show the vow: nothing is decided.
     direct_vm.clear_mocks()
-    mock_page(direct_vm, "A page about something else entirely, with plenty of text.")
+    mock_page(direct_vm, BAD_PAGE)
     mock_verdict(direct_vm, "BROKEN")
     warp_later(direct_vm, 1900)
     sender(direct_vm, direct_alice)
@@ -399,11 +403,13 @@ def test_early_judging_confirms_but_never_breaks(direct_vm, direct_deploy, direc
 
     # Later the page shows it.
     direct_vm.clear_mocks()
-    mock_page(direct_vm, "x" * 400)
+    mock_page(direct_vm, GOOD_PAGE)
     mock_verdict(direct_vm, "FULFILLED")
     warp_later(direct_vm, 1900 + 901)
     sender(direct_vm, direct_alice)
     c.judge(vid)
+    assert json.loads(c.get_vow(vid))["state"] == 4  # confirmed early, but still open to review
+    settle(c, direct_vm, vid, 1900 + 901 + 1300)
     assert json.loads(c.get_vow(vid))["state"] == 1
     assert json.loads(c.position_of(vid, hexof(direct_alice)))["payout"] == str(GEN)
     assert json.loads(c.position_of(vid, hexof(direct_bob)))["payout"] == str(GEN // 2)
@@ -482,7 +488,7 @@ def test_a_judged_vow_cannot_be_released(direct_vm, direct_deploy, direct_alice)
 def test_an_unusable_verdict_is_a_model_failure_not_a_ruling(direct_vm, direct_deploy, direct_alice):
     c = deploy(direct_deploy)
     vid = make_vow(c, direct_vm, direct_alice, stake=GEN)
-    mock_page(direct_vm, "x" * 400)
+    mock_page(direct_vm, GOOD_PAGE)
     mock_verdict(direct_vm, "MAYBE")  # not one of FULFILLED / BROKEN / UNCLEAR
     warp_later(direct_vm, 3600 + 120)
     sender(direct_vm, direct_alice)
@@ -496,8 +502,8 @@ def test_an_unusable_verdict_is_a_model_failure_not_a_ruling(direct_vm, direct_d
 def test_a_terse_page_is_judged_only_on_the_last_attempt(direct_vm, direct_deploy, direct_alice):
     c = deploy(direct_deploy)
     vid = make_vow(c, direct_vm, direct_alice, stake=GEN)
-    mock_page(direct_vm, "<p>Done.</p>")  # readable, but shorter than MIN_PAGE
-    mock_verdict(direct_vm, "FULFILLED")
+    mock_page(direct_vm, "<p>Done 2020-01-15.</p>")  # readable, but shorter than MIN_PAGE
+    mock_verdict(direct_vm, "FULFILLED", quote="Done 2020-01-15.", date_quote="2020-01-15")
     direct_vm.sender = direct_alice
 
     warp_later(direct_vm, 3600 + 120)
@@ -512,4 +518,4 @@ def test_a_terse_page_is_judged_only_on_the_last_attempt(direct_vm, direct_deplo
     warp_later(direct_vm, 3600 + 120 + 2 * 3700)
     c.judge(vid)
     row = json.loads(c.get_vow(vid))
-    assert row["state"] == 1 and row["tries"] == 2
+    assert row["state"] == 4 and row["proposed"] == 1 and row["tries"] == 2

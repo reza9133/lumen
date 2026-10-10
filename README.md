@@ -15,13 +15,36 @@ Public vows, judged by validators. Write a promise, stake GEN behind it and poin
 
 1. `make_vow(text, evidence_url, deadline)` locks the keeper's stake (minimum 0.1 GEN).
 2. Until the deadline anyone except the keeper can call `back(vow_id, "faith" | "doubt")` with at least 0.01 GEN. An address picks one side per vow. Total faith on a vow is capped at half of the keeper's stake; doubt has no cap.
-3. After the deadline anyone can call `judge(vow_id)`. The leader fetches the evidence page and asks an LLM for a verdict. Validators repeat the reading and must agree on the verdict field only (`FULFILLED`, `BROKEN`, `UNCLEAR`, or `UNREADABLE`). The wording of the note may differ.
-4. `claim(vow_id)` pays out.
-5. If a vow is still open thirty days after its deadline (judging keeps failing, or nobody asked), anyone can call `release(vow_id)`. It closes the vow as unclear and everyone can claim a full refund.
+3. After the deadline anyone can call `judge(vow_id)`. The leader fetches the evidence page and asks an LLM for a verdict. A favourable verdict (`FULFILLED`) has to come with a verbatim quote from one source and a date on or before the deadline; the contract checks both itself (see "Evidence you can trust" below). Validators repeat the reading and must agree on the verdict, and each of them must find the leader's quote on its own copy of the page. The wording of the note may differ.
+4. A kept or broken verdict is only a **proposal**. It opens a review window (`review_end` in the vow row) in which the losing side can `dispute(vow_id, url)`. Nothing is payable and no record or ember count changes until the vow is final. `UNCLEAR` is final at once because it refunds everyone.
+5. After the window anyone calls `finalize(vow_id)`. Without disputes the proposal stands. With disputes the validators read once more, with the disputed pages included, and that result is final.
+6. `claim(vow_id)` pays out.
+7. If a vow has no final verdict thirty days after its deadline (or after its review window), anyone can call `release(vow_id)`. It closes the vow as unclear and everyone can claim a full refund.
+
+### Evidence you can trust
+
+A page the keeper runs can say anything, and can be edited after the deadline. The contract therefore never lets a model answer alone move money.
+
+- **How hard is the page to rewrite?** Every link has a provenance, worked out from its shape: `snapshot` (an exact Wayback capture, `web.archive.org/web/<14 digits>/<url>`; the capture time is in the link), `permalink` (a commit-pinned or blob-pinned link on GitHub, GitLab or Codeberg, or a content-addressed `/ipfs/<cid>` link) or `mutable` (everything else). The app shows it, and the vow row carries it.
+- **Pins.** Before the deadline the keeper can call `pin_evidence(vow_id, url)` up to twice to attach a `snapshot` or `permalink`. A snapshot must already exist (its capture time is not in the future). Validators read pins together with the main page.
+- **Quote and date.** A `FULFILLED` answer must name the source it relies on, copy a quote of at least 12 characters, and (unless the source is a snapshot taken by the deadline, whose date is in its link) copy the words that give the date and a `YYYY-MM-DD` that those words show. The contract checks that both quotes appear on the page, that the date is real and on or before the deadline's day, and that the quote shows it. If anything fails the verdict becomes `BROKEN`. So work published after the deadline, an undated page, a page that merely announces its own verdict, and a made-up quote all fail, whatever the model said. Each validator re-checks the leader's quote against its own fetch.
+- **Counter-evidence is ranked by provenance.** A doubter's page can only lower a verdict, and only through a verbatim quote that the judge calls a concrete contradiction. How far it can lower it depends on how firm each side is:
+
+  | Doubter's page | Keeper's proof | Result |
+  |---|---|---|
+  | firm (snapshot or permalink) | editable | `BROKEN` |
+  | firm | firm | `UNCLEAR` (two firm records disagree; refund) |
+  | editable | editable | `UNCLEAR` (a dispute between two editable pages; refund) |
+  | editable | firm | ignored |
+
+  So a crowd of doubters writing invented pages can cancel a vow with a refund at most; they cannot win the stake. Pointing at a page nobody else can edit is how a doubter wins.
+- **Review window.** A kept or broken proposal can be disputed for one eighth of the vow's lifetime (at least ten minutes, at most two days). Proof that rests on an editable page, and every broken proposal, gets double that. In a kept proposal doubters dispute with counter-evidence. In a broken proposal the keeper and faith backers dispute with a rebuttal page, which still has to show a dated completion on or before the deadline, so finishing late does not help. Each side has three slots, a larger position can replace the smallest, and each address submits once.
+- **Early confirmation stays challengeable.** An early `FULFILLED` also opens a review window, and during it the vow stays open to new doubt (not faith), so confirming early cannot shut out a skeptic.
+- **Public proof.** The vow row shows the proof a kept verdict rests on: source, quote, date and a SHA-256 fingerprint of the page text.
 
 Two optional steps sit around judging:
 
-- **Counter-evidence.** Until the deadline, a doubter can call `challenge(vow_id, url)` once to point the judges at a page that argues the vow failed. The judges read it together with the keeper's page, treat it as a claim rather than a fact, and use it only when it gives concrete facts (dates, names, links, numbers) that contradict the keeper's page. Counter-evidence can lower a verdict, never raise one. A vow keeps at most three such pages; when all slots are taken, a doubter whose doubt is larger than the smallest holder's current doubt replaces that holder, who may then submit again.
+- **Counter-evidence.** Until the deadline, a doubter can call `challenge(vow_id, url)` once to point the judges at a page that argues the vow failed. The judges read it together with the keeper's page, treat it as a claim rather than a fact, and use it only when it gives concrete facts (dates, names, links, numbers) that contradict the keeper's page. Counter-evidence can lower a verdict, never raise one, and what it can lower it to depends on provenance (see above). A vow keeps at most three such pages; when all slots are taken, a doubter whose doubt is larger than the smallest holder's current doubt replaces that holder, who may then submit again.
 - **Early confirmation.** Halfway to the deadline, `judge(vow_id)` can be called while nobody doubts the vow. An early check can only confirm the vow. If the page does not show the work yet, the vow stays open, a note is recorded and nothing is counted against the keeper. Early checks of one vow are at least fifteen minutes apart.
 
 | Verdict | Keeper | Faith backers | Doubters |
@@ -38,7 +61,8 @@ Half of a broken stake is burned (shown as embers). If nobody doubted a broken v
 - **Unreadable pages.** A page that cannot be read (network error, HTTP error, or fewer than 20 characters of text) does not decide the vow. `judge` can be called again an hour after the last attempt, up to three attempts, and the vow is then counted as broken. The hour-long gap means a short outage or a rate limit cannot break a vow, while an unreachable page still cannot be used to dodge a verdict.
 - **Evidence addresses.** Evidence must be an `http` or `https` link to a named domain. IP addresses (also when written as four numeric labels, as in `127.0.0.1.example.com`), `localhost`, internal-looking and reserved top-level domains, public wildcard-DNS services such as `nip.io`, credentials in the link, whitespace and custom ports are rejected when the vow is made. Internationalized names are accepted in their punycode form (`xn--`); the app converts them when you paste a link. This checks the shape of the name only. A domain someone controls can still point at a private address, so rely on the web module's own network rules for that.
 - **Reading the page.** A plain GET is used first so HTTP errors are never treated as evidence. If the page has little text, a rendered read is tried as well. A page with fewer than 20 characters is treated as unreadable (it is often a soft error such as a rate-limit notice) and retried; on the third and last attempt any text at all is judged, so a terse real page is not broken unread. Only the first 300,000 characters are looked at, and markup is removed in a single pass, so a hostile page cannot make validators run out of time. Only exact `script`, `style` and `noscript` blocks are dropped, comments are removed whole, and a lone `<` in the text is kept as text.
-- **Counter-evidence is a claim, not a fact.** Pages from doubters go into the same prompt as the keeper's page, marked as untrusted. If a doubter's page gives concrete contradicting facts and the judge cannot tell that the keeper's page is right, the verdict is `BROKEN`: the keeper has to show the work. Pages that cannot be read are skipped, so a dead counter-evidence link never changes the outcome. When no counter-evidence exists the prompt is exactly the one used before this feature.
+- **Counter-evidence is a claim, not a fact.** The judge answers about the keeper's evidence first, on its own. Only if that answer is a verified `FULFILLED` are doubters' pages put in front of it, in a second question, marked as untrusted. Pages that cannot be read are skipped, so a dead counter-evidence link never changes the outcome.
+- **Why a verdict is only proposed.** The page is read once, after the deadline, so a page edited in between can look right. The review window gives everyone who lost something a chance to answer with a record that was not edited, and `finalize` re-reads under dispute. A kept proposal whose page has vanished when it is disputed is closed as unclear.
 - **Why early judging needs a quiet vow.** Skeptics can only react while a vow is open. Early confirmation therefore waits until half of the time has passed and is refused as soon as anyone has doubted the vow, so it cannot be used to close the door on a skeptic who is still looking.
 - **Keeper records.** `record_of(address)` returns kept and broken counts, the current streak, the best streak and `kept_stake`, the total GEN staked on kept vows. Vows can be made with a very small stake, so read the streak together with `kept_stake`.
 
@@ -51,12 +75,16 @@ Half of a broken stake is burned (shown as embers). If nobody doubted a broken v
 - Every early check runs the judges, and the caller pays for it. The fifteen-minute gap limits repeats on one vow.
 - The app labels evidence links as a public record, an archived snapshot or editable by its owner. This is a hint based on the shape of the address; it does not verify anything.
 
-- The judge only sees the first 6,000 characters of text on the evidence page.
+- The judge only sees the first 6,000 characters of text on the evidence page, so a quote has to come from there.
+- An editable page can still carry a backdated line. The quote-and-date check proves the page *claims* the work was done by the deadline, not that it was. What stops a lie is the review window and firm records: an archive capture taken before the deadline that shows the page empty outweighs the page. Pin your own proof, and doubters should capture the page before the deadline.
+- The contract cannot see which capture an archive link finally serves. Use the exact capture link the archive gives you (the timestamp in the link is the capture time). A link for a time with no capture may be answered with the nearest one.
+- Counter-evidence submitted before the deadline still counts at judging; pages submitted in the review window are read once, at `finalize`, and that result is final. A first-come flood of dust-sized disputes is limited by slot replacement (a larger position takes the smallest slot), not eliminated.
+- The proof fingerprint is a SHA-256 of the extracted page text. It lets people compare what was relied on with what the page says now; consensus does not depend on it.
 - A keeper who controls the evidence page can write anything on it. Prefer pages the keeper cannot edit alone, such as a public repository, a commit history or a third-party listing.
 - Vow text and page text are stripped of angle brackets and passed to the model as tagged data with an instruction to ignore commands inside them. This reduces prompt injection, it does not remove it.
 - A fixed 0.01 GEN doubt can win a large share of a broken vow when nobody else doubts. That is intended, and it is also why keepers should choose stakes they are willing to lose.
 - Anyone can fill the faith cap of a vow with a single backing, which stops others from adding faith. It costs the backer nothing if the vow is kept.
-- Judging happens once, at the time `judge` is called after the deadline. A page that changes later does not reopen the verdict.
+- Once a vow is final it is never reopened; a page that changes after `finalize` changes nothing.
 - When a payout is claimed the contract records it at once, but the transfer itself is delivered when the claim transaction finalizes.
 
 ## Run it on Studionet
@@ -102,7 +130,14 @@ pip install -r requirements.txt
 pytest
 ```
 
-The suite runs the contract in memory with mocked web pages and LLM answers. It covers input validation (including evidence address rules), backing rules and the faith cap, counter-evidence rules and slot ranking, early confirmation, a regression test for the self-doubt attack, every verdict and payout, the unreadable-page retry path, single-use claims, streaks, paging and validator agreement. `tests/direct/test_economics.py` checks the payout math on its own: payouts never exceed the pool, and rounding dust stays at a few wei.
+The suite runs the contract in memory with mocked web pages and LLM answers. It covers input validation (including evidence address rules), backing rules and the faith cap, counter-evidence rules and slot ranking, early confirmation, a regression test for the self-doubt attack, every verdict and payout, the unreadable-page retry path, single-use claims, streaks, paging and validator agreement.
+
+`tests/direct/test_adversarial.py` holds the adversarial and end-to-end tests. Each one fixes what the model "said" and checks what the contract does with it:
+
+- **Manipulated evidence:** an invented quote, an undated page, work dated after the deadline, a date the quote does not show, impossible dates, a page that announces its own verdict, a judge that names no real source, a validator that cannot find the leader's quote, pins that are editable, from the future or over the limit.
+- **Post-deadline edits:** work that appears only after the deadline cannot rescue a broken vow; a backdated edit loses to an archive capture of the empty page; an editable page cannot beat a pinned record; two firm records that disagree refund everyone; a keeper can answer a broken proposal with a firm record; a page that vanishes under dispute cannot stay kept.
+- **Coordinated counter-evidence:** a crowd of invented pages never pays the doubters (refund at most); mirrors of one claim count once; a quote not on the counter page, or a pointer to a missing page, is ignored; counter-evidence cannot raise a verdict; dust doubters cannot crowd out a serious one in counter or dispute slots.
+- **Stake to payout:** kept, broken, disputed-and-flipped and unclear vows are run from `make_vow` through backing, judging, the review window, `finalize` and every `claim`. They check that nothing is payable before the verdict is final, that each claim works once, and that the contract's `deposited`, `paid` and `embers` totals balance (only the burned GEN and rounding dust stay behind), including across several vows at once. `tests/direct/test_economics.py` checks the payout math on its own: payouts never exceed the pool, and rounding dust stays at a few wei.
 
 ## Frontend notes
 
