@@ -9,6 +9,7 @@
     "check:evidence": "node --experimental-strip-types scripts/check-evidence.mjs",
     "preview": "vite preview",
     "deploy": "node scripts/deploy.mjs",
+    "e2e": "node scripts/e2e-studionet.mjs",
     "check:payout": "node --experimental-strip-types scripts/check-payout.mjs"
   },
   "dependencies": {

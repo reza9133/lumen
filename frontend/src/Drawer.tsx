@@ -209,7 +209,7 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
                 <input value={pin} onChange={(e) => setPin(e.target.value)} placeholder="https://web.archive.org/web/20261001120000/https://…" />
               </label>
               <button className="ghost" onClick={doPin}>Pin this proof</button>
-              <p className="meta">An exact archive.org capture or a commit-pinned link. It must exist before the deadline. Validators read it together with your page; firm proof gets a shorter review window and cannot be outweighed by an editable page.</p>
+              <p className="meta">An exact archive.org capture or a commit-pinned link. It must exist before the deadline. Validators read it together with your page. If the archive confirms the capture, firm proof gets a shorter review window and cannot be outweighed by an editable page; a capture it cannot confirm is treated as an editable page.</p>
             </div>
           )}
           {canChallenge && <ChallengeForm value={counter} onChange={setCounter} onSubmit={challenge} />}

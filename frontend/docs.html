@@ -175,13 +175,14 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
           <p>A vow keeps at most three such pages. When all slots are taken, a doubter whose doubt is larger than the smallest holder's current doubt replaces that holder, who may then submit again.</p>
 
           <h4>Pinned proof</h4>
-          <p>Before the deadline the keeper can call <code>pin_evidence(vow_id, url)</code> up to twice to attach proof that cannot be rewritten: an exact Wayback capture (<code>web.archive.org/web/&lt;14 digits&gt;/&lt;url&gt;</code>, whose capture time must not be in the future) or a commit-pinned or content-addressed link. Validators read pins together with the keeper's page. Firm proof gets a shorter review window and cannot be outweighed by an editable counter-page.</p>
+          <p>Before the deadline the keeper can call <code>pin_evidence(vow_id, url)</code> up to twice to attach proof that cannot be rewritten: an exact Wayback capture (<code>web.archive.org/web/&lt;14 digits&gt;/&lt;url&gt;</code>, whose capture time must not be in the future) or a commit-pinned or content-addressed link. Validators read pins together with the keeper's page. A capture only counts as firm when the archive confirms, when the vow is judged, that it served exactly the capture in the link (see below). Firm proof gets a shorter review window and cannot be outweighed by an editable counter-page.</p>
+          <p>The 14 digits in a Wayback link are only what was asked for. A link for a time without a capture is answered with the nearest capture, which can be one taken after the deadline. Validators therefore read the <code>Memento-Datetime</code> header of the replay that was actually served. The link counts as a <code>snapshot</code> only if that header names exactly the capture in the link and that capture was taken by the deadline. Archive redirects are followed up to three times, only inside <code>web.archive.org/web/</code>. A redirect to another capture, a missing or malformed header, a redirect out of the archive, a loop or an error status means the link is treated as an editable page: it can still be read, but it has to show a dated completion like any other editable page and gets no special authority.</p>
 
           <h4>Review window and disputes</h4>
           <p>A kept or broken proposal can be disputed with <code>dispute(vow_id, url)</code> until <code>review_end</code>: one eighth of the vow's lifetime, at least ten minutes and at most two days, doubled when the proof rests on an editable page and for every broken proposal. Against a kept proposal, doubters dispute with counter-evidence. Against a broken proposal, the keeper and faith backers dispute with a rebuttal page, which still has to show a dated completion on or before the deadline. Three slots, one page per address, a larger position replaces the smallest. After the window anyone calls <code>finalize</code>: without disputes the proposal stands; with disputes the validators read once more and that result is final. If the keeper's page cannot be read during a dispute of a kept proposal, the vow closes as unclear.</p>
 
           <h4>Evidence provenance</h4>
-          <p>Every link is classed by its shape as <code>snapshot</code>, <code>permalink</code> or <code>mutable</code>. A <code>FULFILLED</code> answer must name a source, copy a verbatim quote of at least 12 characters and, unless the source is a snapshot (its date is in the link), copy the words that give the date plus a <code>YYYY-MM-DD</code> that they show. The contract verifies the quote, the date and that it is on or before the deadline; otherwise the verdict is <code>BROKEN</code>. Every validator also checks the leader's quote against its own copy.</p>
+          <p>Every link is classed as <code>snapshot</code>, <code>permalink</code> or <code>mutable</code>: by its shape, and for an archive link only after the archive confirmed the capture it served. A <code>FULFILLED</code> answer must name a source, copy a verbatim quote of at least 12 characters and, unless the source is a confirmed snapshot (its date is the capture time), copy the words that give the date plus a <code>YYYY-MM-DD</code> that they show. The contract verifies the quote, the date and that it is on or before the deadline; otherwise the verdict is <code>BROKEN</code>. Every validator also checks the leader's quote against its own copy.</p>
           <table>
             <thead><tr><th>Doubter's page</th><th>Keeper's proof</th><th>Result</th></tr></thead>
             <tbody>
@@ -371,7 +372,7 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
 
           <div class="api">
             <h4><code>pin_evidence(vow_id, url)</code></h4>
-            <p>Keeper only, before the deadline, at most twice. The link must be an archive capture that already exists or a commit-pinned or content-addressed link.</p>
+            <p>Keeper only, before the deadline, at most twice. The link must look like an archive capture that already exists or be a commit-pinned or content-addressed link. The archive's confirmation of the capture happens when the vow is judged.</p>
           </div>
 
           <div class="api">
@@ -511,7 +512,7 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
             <li><strong>Ledger.</strong> It can be searched and sorted. With a wallet connected, <em>My vows</em> dims every other keeper's lantern in the sky and filters the ledger.</li>
             <li><strong>Paging.</strong> The app loads the 60 newest vows and shows a Show older vows button when there are more.</li>
             <li><strong>Input.</strong> Stake fields accept a comma as decimal separator and non-Latin digits.</li>
-            <li><strong>Evidence labels.</strong> Links are labelled as a public record, an archived snapshot or editable by its owner. This is a hint based on the shape of the address; it does not verify anything.</li>
+            <li><strong>Evidence labels.</strong> Links are labelled as a public record, an archived snapshot or editable by its owner. This is a hint based on the shape of the address; it does not verify anything. The verified class of the page a kept verdict rests on is <code>proof.tier</code>.</li>
             <li><strong>Motion.</strong> Animation respects <code>prefers-reduced-motion</code>.</li>
           </ul>
 
@@ -547,7 +548,7 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
             <li>A keeper who controls the evidence page can write anything on it. Prefer pages the keeper cannot edit alone, such as a public repository, a commit history or a third-party listing.</li>
             <li>The judge only sees the first 6,000 characters of text on the evidence page, so a quote has to come from there.</li>
             <li>An editable page can still carry a backdated line. The check proves the page claims the work was done by the deadline, not that it was. The review window and firm records answer a lie: an archive capture from before the deadline that shows the page empty outweighs the page, so pin your own proof and capture suspicious pages before the deadline.</li>
-            <li>The contract cannot see which capture an archive link finally serves. Use the exact capture link; a link for a time with no capture may be answered with the nearest one.</li>
+            <li>The capture time of an archive link is taken from the archive's own <code>Memento-Datetime</code> header, not from the link. This trusts the Wayback Machine to stamp its replays truthfully and to be reachable from every validator. A capture that cannot be confirmed is demoted to an editable page instead of failing, so a flaky archive costs a keeper the firm treatment, not the vow.</li>
             <li>A vow is read at <code>judge</code>, may be read again at <code>finalize</code> when pages were disputed, and is never reopened after that.</li>
             <li>A fixed 0.01 GEN doubt can win a large share of a broken vow when nobody else doubts. That is intended, and it is why keepers should choose stakes they are willing to lose.</li>
             <li>Anyone can fill the faith cap of a vow with a single backing, which stops others from adding faith. It costs the backer nothing if the vow is kept.</li>
