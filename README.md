@@ -139,6 +139,8 @@ PIN_URL=https://web.archive.org/web/<14 digits>/https://… EXPECT_TIER=snapshot
 
 Before the run, a `PIN_URL` is checked the way the validators will check it (redirects inside the archive, `Memento-Datetime` against the link), so a link the archive would not confirm is reported at once. `EXPECT_TIER` compares the proof tier recorded for a kept verdict with what you expect. Every transaction must succeed for the script to exit with status 0.
 
+Reports of two complete Studionet runs (a kept vow and a broken vow, with the transaction hashes, the review and finalization steps and the native GEN payouts) are in [`evidence/`](evidence/).
+
 ## Tests
 
 ```bash
