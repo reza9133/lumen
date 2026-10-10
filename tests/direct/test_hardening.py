@@ -80,3 +80,67 @@ def test_evidence_address_rule():
         "http://169.254.169.254.example.com/", "https://foo.test/", "https://A.NIP.IO/x", "https://x.sslip.io/",
     ]:
         assert not valid(bad), bad
+
+
+# ---- archive helpers: which capture did the archive say it served? -------------------------------------------
+
+def load_archive():
+    from datetime import datetime, timezone
+
+    src = (Path(__file__).resolve().parents[2] / "contracts" / "lumen.py").read_text()
+    ns = {"re": re, "datetime": datetime, "timezone": timezone, "PAGE_CHARS": PAGE_CHARS, "MAX_RAW": MAX_RAW}
+    exec(src[src.index("# A public web address"):src.index("@gl.evm.contract_interface")], ns)
+    exec(src[src.index("def _header"):src.index("def _read_source")], ns)
+    exec(src[src.index("def _provenance"):src.index("def _norm")], ns)
+    return ns
+
+
+def test_the_memento_datetime_header_is_read_strictly():
+    ns = load_archive()
+    http_date = ns["_http_date"]
+    assert http_date("Wed, 15 Jan 2020 12:00:00 GMT") == 1579089600
+    for bad in ("", None, "yesterday", "2020-01-15T12:00:00Z", "Wed, 15 Jan 2020 12:00:00 CET", "Wed, 15 Jan 2020 12:00 GMT",
+                "Wed, 31 Feb 2020 12:00:00 GMT", "Wed, 15 Foo 2020 12:00:00 GMT", "Wed, 15 Jan 2020 25:00:00 GMT",
+                "Wed, 15 Jan 2020 12:00:60 GMT", " Wed, 15 Jan 2020 12:00:00 GMT", "Wed, 15 Jan 2020 12:00:00 GMT x"):
+        assert http_date(bad) is None, bad
+
+
+def test_headers_are_found_by_name_whatever_their_type():
+    header = load_archive()["_header"]
+    assert header({"Memento-Datetime": b" Wed, 15 Jan 2020 12:00:00 GMT "}, "memento-datetime") == "Wed, 15 Jan 2020 12:00:00 GMT"
+    assert header({b"MEMENTO-DATETIME": "x"}, "memento-datetime") == "x"
+    assert header({"other": "x"}, "memento-datetime") == ""
+    for odd in (None, 5, "text", [], object()):
+        assert header(odd, "memento-datetime") == ""
+
+
+def test_archive_redirects_are_followed_only_inside_the_archive():
+    target = load_archive()["_archive_target"]
+    ok = "https://web.archive.org/web/20200115120000/https://blog.example.org/x"
+    assert target(ok) == ok
+    assert target("http://web.archive.org/web/2020/https://blog.example.org/x") == "http://web.archive.org/web/2020/https://blog.example.org/x"
+    assert target("/web/20200115120000/https://blog.example.org/x") == ok
+    assert target("//web.archive.org/web/20200115120000/https://blog.example.org/x") == ok
+    for bad in ("", None, "https://evil.example.org/web/2020/x", "//evil.example.org/x", "https://web.archive.org.evil.example.org/web/2/x",
+                "https://web.archive.org@evil.example.org/web/2/x", "https://web.archive.org/save/https://x.example.org", "javascript:alert(1)",
+                "https://web.archive.org/web/ 2020/x", "https://web.archive.org/web/" + "a" * 2100):
+        assert target(bad) is None, bad
+
+
+def test_a_snapshot_counts_only_when_the_archive_confirmed_the_capture():
+    ns = load_archive()
+    tier = ns["_tier"]
+    url = "https://web.archive.org/web/20200115120000/https://blog.example.org/x"
+    ts = ns["_snapshot_ts"](url)
+    deadline, now = ts + 1000, ts + 2000
+    assert tier(url, deadline, now, ts) == "snapshot"
+    assert tier(url, deadline, now) == "mutable"                  # nothing confirmed
+    assert tier(url, deadline, now, None) == "mutable"
+    assert tier(url, deadline, now, ts + 1) == "mutable"          # a different capture was served
+    assert tier(url, deadline, now, ts - 1) == "mutable"
+    assert tier(url, ts - 1, now, ts) == "mutable"                # taken after the deadline
+    assert tier(url, deadline, ts - 1, ts) == "mutable"           # not taken yet
+    perma = "https://github.com/someone/essays/commit/" + "a" * 40
+    assert tier(perma, deadline, now) == "permalink"              # other firm links are not archive captures
+    assert tier("https://blog.example.org/x", deadline, now, ts) == "mutable"
+    assert tier("https://web.archive.org/web/20209999999999/https://blog.example.org/x", deadline, now, ts) == "mutable"

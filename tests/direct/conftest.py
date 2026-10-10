@@ -1,6 +1,7 @@
 """Shared helpers for the direct-mode suite (genlayer-test fixtures)."""
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 
@@ -114,3 +115,34 @@ def mock_counter(vm, body="The chapter was never published. The archive from 3 M
 def sender(vm, who):
     vm.sender = who
     vm.value = 0
+
+
+# ---- Wayback Machine replays ---------------------------------------------------------------------------------
+# A replay of an exact capture carries a Memento-Datetime header, set by the archive. A link for a time without a
+# capture is answered with the nearest one, either by a redirect or by serving that capture directly.
+
+ARCHIVE_PAGE = "https://blog.example.org/chapter-one"
+
+
+def memento(ts: str) -> str:
+    """"20200115120000" -> "Wed, 15 Jan 2020 12:00:00 GMT" (the format of the archive's Memento-Datetime header)."""
+    return datetime.strptime(ts, "%Y%m%d%H%M%S").strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+def snapshot_url(ts: str, flag: str = "") -> str:
+    return f"https://web.archive.org/web/{ts}{flag}/{ARCHIVE_PAGE}"
+
+
+def mock_snapshot(vm, ts, body, served=None, status=200, headers=None, flag=""):
+    """The archive answers a request for capture `ts`. By default it serves exactly that capture; `served` names
+    the capture it really serves instead. A `headers` value of None removes that header."""
+    h = {"memento-datetime": memento(served or ts), "content-type": "text/html"}
+    h.update(headers or {})
+    h = {k: v for k, v in h.items() if v is not None}
+    vm.mock_web(r"web\.archive\.org/web/" + ts + flag + "/", {"status": status, "body": body, "headers": h})
+
+
+def mock_redirect(vm, ts, to, status=302, location=None, flag=""):
+    """The archive redirects a request for capture `ts` to another address (by default the capture `to`)."""
+    loc = location if location is not None else f"/web/{to}/{ARCHIVE_PAGE}"
+    vm.mock_web(r"web\.archive\.org/web/" + ts + flag + "/", {"status": status, "body": "", "headers": {"location": loc}})

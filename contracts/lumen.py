@@ -63,6 +63,12 @@ _PERMALINK_RE = re.compile(
     r"|^https?://[^/\s]+/ipfs/(?:Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-z2-7]{50,})(?:[/?#]\S*)?$"
 )
 _MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+# Where an archive redirect may lead: the archive's own replay path and nowhere else.
+_ARCHIVE_RE = re.compile(r"^https?://web\.archive\.org/web/\S+$")
+# The archive's Memento-Datetime header, an RFC 7231 date such as "Wed, 15 Jan 2020 12:00:00 GMT".
+_HTTP_DATE = re.compile(r"^[A-Za-z]{3}, (\d{2}) ([A-Za-z]{3}) (\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT$")
+_REDIRECTS = (301, 302, 303, 307, 308)
+MAX_HOPS = 3  # archive redirects that are followed when reading a snapshot link
 
 
 @gl.evm.contract_interface
@@ -190,30 +196,102 @@ def _entries(raw: str) -> list:
     return out
 
 
-def _read_evidence(url: str, limit: int = PAGE_CHARS) -> str:
-    """Page text, or an empty string when the page cannot be read.
-
-    A plain GET reports the HTTP status, so an error page is never mistaken for
-    evidence. If the page is a script-driven shell with almost no text, a
-    rendered read is tried as well and the longer text wins."""
-    text = ""
+def _header(headers, name: str) -> str:
+    """One response header as text, or an empty string. The name is matched without regard to case and the value
+    may arrive as bytes or text."""
     try:
-        res = gl.nondet.web.get(url)
+        items = list(headers.items())
+    except Exception:
+        return ""
+    for k, v in items:
+        key = bytes(k).decode("latin-1") if isinstance(k, (bytes, bytearray)) else str(k)
+        if key.strip().lower() == name:
+            val = bytes(v).decode("latin-1") if isinstance(v, (bytes, bytearray)) else str(v)
+            return val.strip()
+    return ""
+
+
+def _http_date(value: str):
+    """Seconds since the epoch for a header date like "Wed, 15 Jan 2020 12:00:00 GMT", or None if it is anything else."""
+    m = _HTTP_DATE.match(value or "")
+    if m is None:
+        return None
+    mon = m.group(2).lower()
+    if mon not in _MONTHS:
+        return None
+    try:
+        when = datetime(
+            int(m.group(3)), _MONTHS.index(mon) + 1, int(m.group(1)),
+            int(m.group(4)), int(m.group(5)), int(m.group(6)), tzinfo=timezone.utc,
+        )
+    except ValueError:
+        return None
+    return int(when.timestamp())
+
+
+def _archive_target(loc: str):
+    """Where an archive redirect leads, if it stays on the archive's replay path. Anything else is not followed."""
+    loc = (loc or "").strip()
+    if loc.startswith("//web.archive.org/web/"):
+        loc = "https:" + loc
+    elif loc.startswith("/web/"):
+        loc = "https://web.archive.org" + loc
+    if len(loc) > 2000 or _ARCHIVE_RE.match(loc) is None:
+        return None
+    return loc
+
+
+def _read_source(url: str, limit: int = PAGE_CHARS):
+    """(page text, authenticated capture time). The text is empty when the page cannot be read.
+
+    A plain GET reports the HTTP status, so an error page is never mistaken for evidence. If the page is a
+    script-driven shell with almost no text, a rendered read is tried as well and the longer text wins.
+
+    The capture time is the time the archive says it served, and it is only ever set for a Wayback link. The
+    archive stamps every replay with a Memento-Datetime header (headers of the archived site are re-labelled
+    x-archive-orig-*, so the page cannot forge it). A link for a time without an exact capture is answered with
+    the nearest one, by a redirect or by the nearest capture itself, so the time in the link proves nothing.
+    The capture time is None whenever the served capture cannot be confirmed: no header, an unreadable header,
+    a header that disagrees with the address that was finally served, too many redirects, or a redirect that leaves
+    the archive. A snapshot link is never read through the rendered fallback: a browser follows a redirect anywhere
+    and hides the headers, so what it returns could not be tied to any capture."""
+    text = ""
+    served = None
+    snap = _SNAPSHOT_RE.match(url) is not None
+    cur = url
+    for _hop in range(MAX_HOPS + 1):
+        try:
+            res = gl.nondet.web.get(cur)
+        except Exception:
+            break
         status = getattr(res, "status", None)
         if status is None:
             status = getattr(res, "status_code", None)
-        if not (isinstance(status, int) and status >= 400):
+        headers = getattr(res, "headers", None)
+        if snap and isinstance(status, int) and status in _REDIRECTS:
+            nxt = _archive_target(_header(headers, "location"))
+            if nxt is None:
+                break
+            cur = nxt
+            continue
+        if isinstance(status, int) and status >= 400:
+            return "", None
+        try:
             body = res.body
             if isinstance(body, (bytes, bytearray)):
                 raw = bytes(body[:MAX_RAW * 4]).decode("utf-8", errors="replace")
             else:
                 raw = str(body or "")
             text = _strip_markup(raw, limit)
-        else:
-            return ""
-    except Exception:
-        text = ""
-    if len(text) < 200:  # a thin page may be a script-driven shell
+        except Exception:
+            text = ""
+        if snap:
+            served = _http_date(_header(headers, "memento-datetime"))
+            end = _SNAPSHOT_RE.match(cur)
+            if end is not None and served is not None and _snapshot_ts(cur) != served:
+                served = None  # the header and the address that was served name different captures
+        break
+    if len(text) < 200 and not snap:  # a thin page may be a script-driven shell
         render = getattr(gl.nondet.web, "render", None)
         if render is not None:
             try:
@@ -222,7 +300,7 @@ def _read_evidence(url: str, limit: int = PAGE_CHARS) -> str:
                     text = alt
             except Exception:
                 pass
-    return text
+    return text, served
 
 
 def _provenance(url: str) -> str:
@@ -245,12 +323,15 @@ def _snapshot_ts(url: str):
         return None
 
 
-def _tier(url: str, limit: int, now: int) -> str:
-    """The provenance of `url`, except that a snapshot only counts if it was taken by `limit` and already exists."""
+def _tier(url: str, limit: int, now: int, served=None) -> str:
+    """The provenance of `url`, except that a snapshot only counts as one if the archive confirmed that it served
+    exactly the capture named in the link (`served`, see _read_source), that capture was taken by `limit` and it
+    already exists. Otherwise the page is read as what it is for all purposes here: an editable page, which has
+    to show a dated completion like any other."""
     t = _provenance(url)
     if t == "snapshot":
         ts = _snapshot_ts(url)
-        if ts is None or ts > limit or ts > now:
+        if ts is None or served is None or served != ts or ts > limit or ts > now:
             return "mutable"
     return t
 
@@ -320,9 +401,9 @@ def _check_counters(text: str, proof: dict, counters: list, now: int):
     seen = []
     blocks = ""
     for url in counters:
-        body = _read_evidence(url, COUNTER_CHARS)
+        body, served = _read_source(url, COUNTER_CHARS)
         if len(body) >= MIN_COUNTER:
-            seen.append((url, body))
+            seen.append((url, body, served))
             blocks += f'<counter n="{len(seen)}">{body}</counter>\n'
     if not seen:
         return None
@@ -335,11 +416,11 @@ def _check_counters(text: str, proof: dict, counters: list, now: int):
         return None
     if n < 1 or n > len(seen):
         return None
-    url, body = seen[n - 1]
+    url, body, served = seen[n - 1]
     quote = _clean(str(res.get("quote", "")), MAX_QUOTE)
     if len(quote) < MIN_QUOTE or _norm(quote) not in _norm(body):
         return None
-    firm_counter = _tier(url, now, now) != "mutable"
+    firm_counter = _tier(url, now, now, served) != "mutable"
     firm_proof = proof["tier"] != "mutable"
     if firm_counter and not firm_proof:
         return "BROKEN", "A firm record contradicts the keeper's editable page."
@@ -456,15 +537,17 @@ def _adjudicate(text: str, sources: list, deadline: int, counters: list, early: 
 
     def run():
         pages = {}
+        tiers = {}  # url -> the provenance this node itself authenticated for it
         live = []
         for i, url in enumerate(sources):
-            body = _read_evidence(url)
+            body, served = _read_source(url)
             if i == 0 and len(body) < min_page:
-                return {"verdict": "UNREADABLE", "note": "The evidence page could not be read.", "proof": None}, pages
+                return {"verdict": "UNREADABLE", "note": "The evidence page could not be read.", "proof": None}, pages, tiers
             if i > 0 and len(body) < MIN_COUNTER:
                 continue
             pages[url] = body
-            live.append((url, _tier(url, deadline, now), body))
+            tiers[url] = _tier(url, deadline, now, served)
+            live.append((url, tiers[url], body))
         res = _ask(_prompt(text, iso, live, early))
         verdict = str(res.get("verdict", "")).upper().strip()
         if verdict not in ("FULFILLED", "BROKEN", "UNCLEAR"):
@@ -480,7 +563,7 @@ def _adjudicate(text: str, sources: list, deadline: int, counters: list, early: 
             if lowered is not None:
                 verdict, note = lowered
                 proof = None
-        return {"verdict": verdict, "note": note, "proof": proof}, pages
+        return {"verdict": verdict, "note": note, "proof": proof}, pages, tiers
 
     def leader_fn():
         return run()[0]
@@ -488,16 +571,33 @@ def _adjudicate(text: str, sources: list, deadline: int, counters: list, early: 
     def validator_fn(leaders_res: gl.vm.Result) -> bool:
         if not isinstance(leaders_res, gl.vm.Return):
             return False
-        mine, pages = run()
+        mine, pages, tiers = run()
         theirs = leaders_res.calldata
         if theirs.get("verdict") != mine["verdict"]:
             return False
         if theirs["verdict"] == "FULFILLED":
-            # The leader's quote must be on this validator's own copy of the page it cites.
             proof = theirs.get("proof") or {}
-            body = pages.get(proof.get("url"))
+            if not isinstance(proof, dict):
+                return False
+            url = proof.get("url")
+            if not isinstance(url, str):
+                return False
+            # The leader's quote must be on this validator's own copy of the page it cites.
+            body = pages.get(url)
             quote = _norm(proof.get("quote", ""))
-            return body is not None and len(quote) >= MIN_QUOTE and quote in _norm(body)
+            if body is None or len(quote) < MIN_QUOTE or quote not in _norm(body):
+                return False
+            # How firm that page is must be what this validator authenticated too. The tier is stored with the
+            # verdict and sets the review window, so a leader cannot hand a page a stronger standing than the
+            # archive gave it. For a snapshot the date is the authenticated capture day, so it is checked as well.
+            tier = tiers.get(url)
+            if proof.get("tier") != tier:
+                return False
+            if tier == "snapshot":
+                day = datetime.fromtimestamp(_snapshot_ts(url), timezone.utc).strftime("%Y-%m-%d")
+                if proof.get("date") != day:
+                    return False
+            return True
         return True
 
     return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)

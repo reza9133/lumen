@@ -14,13 +14,14 @@ import time
 
 from conftest import (
     BAD_PAGE, CONTRACT, COUNTER_URL, GEN, GOOD_DATE, GOOD_DATE_QUOTE, GOOD_PAGE, GOOD_QUOTE, PROOF_URL, REVIEW_WAIT,
-    back, hexof, judge, make_vow, mock_counter, mock_counter_verdict, mock_page, mock_verdict, pay, propose, sender,
-    settle, verdict_reply, warp_later,
+    back, hexof, judge, make_vow, mock_counter, mock_counter_verdict, mock_page, mock_snapshot, mock_verdict, pay,
+    propose, sender, settle, verdict_reply, warp_later,
 )
 
 OPEN, KEPT, BROKEN, UNCLEAR, REVIEW = 0, 1, 2, 3, 4
 
-# Exact Wayback captures (the capture time is part of the link) and a commit-pinned link.
+# Exact Wayback captures (the archive confirms the capture time when it serves them, see test_archive.py) and a
+# commit-pinned link.
 SNAP = "https://web.archive.org/web/20200115120000/https://blog.example.org/chapter-one"
 SNAP_OLD = "https://web.archive.org/web/20200102000000/https://blog.example.org/chapter-one"
 SNAP_2 = "https://web.archive.org/web/20200110000000/https://blog.example.org/chapter-one"
@@ -37,10 +38,6 @@ def deploy(direct_deploy):
 
 def row(c, vid):
     return json.loads(c.get_vow(vid))
-
-
-def mock_snapshot(vm, ts, body):
-    vm.mock_web(r"web\.archive\.org/web/" + ts + "/", {"status": 200, "body": body})
 
 
 def totals(c):
@@ -199,8 +196,8 @@ def test_pin_rules(direct_vm, direct_deploy, direct_alice, direct_bob):
 
 
 def test_a_pinned_snapshot_fulfils_a_vow_without_a_page_date(direct_vm, direct_deploy, direct_alice):
-    """The capture time is in the link, so a pinned capture needs no date on the page. The keeper's own page
-    shows nothing here, and the proof is the snapshot. Firm proof gets the short review window."""
+    """The archive confirms the capture time, so a pinned capture needs no date on the page. The keeper's own
+    page shows nothing here, and the proof is the snapshot. Firm proof gets the short review window."""
     c = deploy(direct_deploy)
     vid = make_vow(c, direct_vm, direct_alice, stake=GEN)
     sender(direct_vm, direct_alice)
