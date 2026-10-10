@@ -139,7 +139,7 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
         <!-- ───────────────────────── Lifecycle ───────────────────────── -->
         <section id="lifecycle">
           <h2>Vow lifecycle</h2>
-          <p>A vow moves through four states: <code>OPEN</code> (0), <code>KEPT</code> (1), <code>BROKEN</code> (2) and <code>UNCLEAR</code> (3). Everything before the verdict happens while the vow is open.</p>
+          <p>A vow moves through five states: <code>OPEN</code> (0), <code>KEPT</code> (1), <code>BROKEN</code> (2), <code>UNCLEAR</code> (3) and <code>REVIEW</code> (4). A kept or broken verdict is first only proposed: the vow sits in <code>REVIEW</code> while the losing side can dispute it, and nothing is payable until <code>finalize</code> makes it final. <code>UNCLEAR</code> is final at once.</p>
 
           <ol class="flow">
             <li>
@@ -155,10 +155,15 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
             <li>
               <span class="n">3</span>
               <h4>Judge</h4>
-              <p>After the deadline anyone calls <code>judge</code>. Validators read the page and agree on a verdict.</p>
+              <p>After the deadline anyone calls <code>judge</code>. Validators read the evidence and agree on a proposed verdict. A favourable one needs a verified quote and date.</p>
             </li>
             <li>
               <span class="n">4</span>
+              <h4>Review and finalize</h4>
+              <p>The losing side can <code>dispute</code> during the review window. Then anyone calls <code>finalize</code>.</p>
+            </li>
+            <li>
+              <span class="n">5</span>
               <h4>Claim</h4>
               <p>Each address calls <code>claim</code> once to withdraw what it is owed.</p>
             </li>
@@ -169,11 +174,29 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
           <p>Until the deadline, a doubter can call <code>challenge(vow_id, url)</code> once to point the judges at a page that argues the vow failed. The judges read it together with the keeper's page and treat it as a claim rather than a fact. It is used only when it gives concrete facts (dates, names, links, numbers) that contradict the keeper's page. Counter-evidence can lower a verdict, never raise one.</p>
           <p>A vow keeps at most three such pages. When all slots are taken, a doubter whose doubt is larger than the smallest holder's current doubt replaces that holder, who may then submit again.</p>
 
+          <h4>Pinned proof</h4>
+          <p>Before the deadline the keeper can call <code>pin_evidence(vow_id, url)</code> up to twice to attach proof that cannot be rewritten: an exact Wayback capture (<code>web.archive.org/web/&lt;14 digits&gt;/&lt;url&gt;</code>, whose capture time must not be in the future) or a commit-pinned or content-addressed link. Validators read pins together with the keeper's page. Firm proof gets a shorter review window and cannot be outweighed by an editable counter-page.</p>
+
+          <h4>Review window and disputes</h4>
+          <p>A kept or broken proposal can be disputed with <code>dispute(vow_id, url)</code> until <code>review_end</code>: one eighth of the vow's lifetime, at least ten minutes and at most two days, doubled when the proof rests on an editable page and for every broken proposal. Against a kept proposal, doubters dispute with counter-evidence. Against a broken proposal, the keeper and faith backers dispute with a rebuttal page, which still has to show a dated completion on or before the deadline. Three slots, one page per address, a larger position replaces the smallest. After the window anyone calls <code>finalize</code>: without disputes the proposal stands; with disputes the validators read once more and that result is final. If the keeper's page cannot be read during a dispute of a kept proposal, the vow closes as unclear.</p>
+
+          <h4>Evidence provenance</h4>
+          <p>Every link is classed by its shape as <code>snapshot</code>, <code>permalink</code> or <code>mutable</code>. A <code>FULFILLED</code> answer must name a source, copy a verbatim quote of at least 12 characters and, unless the source is a snapshot (its date is in the link), copy the words that give the date plus a <code>YYYY-MM-DD</code> that they show. The contract verifies the quote, the date and that it is on or before the deadline; otherwise the verdict is <code>BROKEN</code>. Every validator also checks the leader's quote against its own copy.</p>
+          <table>
+            <thead><tr><th>Doubter's page</th><th>Keeper's proof</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td>firm</td><td>editable</td><td><code>BROKEN</code></td></tr>
+              <tr><td>firm</td><td>firm</td><td><code>UNCLEAR</code></td></tr>
+              <tr><td>editable</td><td>editable</td><td><code>UNCLEAR</code></td></tr>
+              <tr><td>editable</td><td>firm</td><td>ignored</td></tr>
+            </tbody>
+          </table>
+
           <h4>Early confirmation</h4>
-          <p>Halfway to the deadline, <code>judge</code> can be called while nobody doubts the vow. An early check can only confirm the vow. If the page does not show the work yet, the vow stays open, a note is recorded and nothing is counted against the keeper. Early checks of one vow are at least fifteen minutes apart.</p>
+          <p>Halfway to the deadline, <code>judge</code> can be called while nobody doubts the vow. An early check can only confirm the vow, and a confirmation opens a review window during which the vow stays open to new doubt (not faith). If the page does not show the work yet, the vow stays open, a note is recorded and nothing is counted against the keeper. Early checks of one vow are at least fifteen minutes apart.</p>
 
           <h4>Release</h4>
-          <p>If a vow is still open thirty days after its deadline (judging keeps failing, or nobody asked), anyone can call <code>release</code>. It closes the vow as unclear and everyone can claim a full refund.</p>
+          <p>If a vow has no final verdict thirty days after its deadline, or after the end of its review window (judging keeps failing, or nobody asked), anyone can call <code>release</code>. It closes the vow as unclear and everyone can claim a full refund.</p>
 
           <h3>Timeline</h3>
           <div class="timeline" role="img" aria-label="Timeline: vow made, halfway point opens early confirmation, deadline opens judging, thirty days after the deadline opens release">
@@ -301,6 +324,10 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
               <tr><td><code>MAX_TRIES</code></td><td>3</td><td>Judging attempts when the page cannot be read.</td></tr>
               <tr><td><code>RETRY_GAP</code></td><td>1 hour</td><td>Wait between such attempts.</td></tr>
               <tr><td><code>EARLY_GAP</code></td><td>15 minutes</td><td>Wait between early checks of one vow.</td></tr>
+              <tr><td><code>MAX_PINS</code></td><td>2</td><td>Pinned proofs a keeper can attach before the deadline.</td></tr>
+              <tr><td><code>MAX_DISPUTES</code></td><td>3</td><td>Pages the losing side can submit in a review window.</td></tr>
+              <tr><td><code>MIN_QUOTE</code> / <code>MAX_QUOTE</code></td><td>12 / 240</td><td>Length of the verbatim quote a favourable verdict rests on.</td></tr>
+              <tr><td><code>REVIEW_DIV</code>, <code>REVIEW_MIN</code>, <code>REVIEW_MAX</code></td><td>8, 10 min, 2 days</td><td>Review window: a share of the vow's lifetime, clamped. Doubled for editable proof and broken proposals.</td></tr>
               <tr><td><code>RELEASE_AFTER</code></td><td>30 days</td><td>How long after the deadline a vow can be released.</td></tr>
               <tr><td><code>PAGE_MAX</code></td><td>60</td><td>Most vows <code>list_vows</code> returns in one call.</td></tr>
             </tbody>
@@ -343,8 +370,23 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           </div>
 
           <div class="api">
+            <h4><code>pin_evidence(vow_id, url)</code></h4>
+            <p>Keeper only, before the deadline, at most twice. The link must be an archive capture that already exists or a commit-pinned or content-addressed link.</p>
+          </div>
+
+          <div class="api">
             <h4><code>judge(vow_id)</code></h4>
-            <p>Asks the validators to rule. After the deadline it can be called by anyone, and again after an hour if the page was unreadable. Before the deadline it is an early check: allowed from the halfway point, only while nobody doubts the vow, and it can only confirm.</p>
+            <p>Asks the validators to rule. After the deadline it can be called by anyone, and again after an hour if the page was unreadable. Before the deadline it is an early check: allowed from the halfway point, only while nobody doubts the vow, and it can only confirm. A kept or broken result is proposed and opens a review window; unclear is final.</p>
+          </div>
+
+          <div class="api">
+            <h4><code>dispute(vow_id, url)</code></h4>
+            <p>During a review window. Doubters dispute a kept proposal, the keeper and faith backers a broken one. One page per address.</p>
+          </div>
+
+          <div class="api">
+            <h4><code>finalize(vow_id)</code></h4>
+            <p>After the review window, by anyone. Settles the proposal, re-judging once if pages were disputed. Records, embers and payouts change only here.</p>
           </div>
 
           <div class="api">
@@ -361,11 +403,11 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           <table>
             <thead><tr><th>Method</th><th>Returns</th></tr></thead>
             <tbody>
-              <tr><td><code>stats()</code></td><td><code>{ total, kept, broken, embers }</code>, with <code>embers</code> in wei as a string.</td></tr>
+              <tr><td><code>stats()</code></td><td><code>{ total, kept, broken, embers, deposited, paid }</code>, with the amounts in wei as strings. <code>deposited - paid</code> is never less than <code>embers</code>.</td></tr>
               <tr><td><code>get_vow(vow_id)</code></td><td>One vow row (see below).</td></tr>
               <tr><td><code>list_vows(offset, limit)</code></td><td>Newest first. <code>limit</code> is clamped to 60.</td></tr>
               <tr><td><code>record_of(who)</code></td><td><code>{ kept, broken, streak, best, kept_stake }</code> for a keeper address.</td></tr>
-              <tr><td><code>position_of(vow_id, who)</code></td><td><code>{ faith, doubt, payout, claimed, challenged }</code> for one address on one vow.</td></tr>
+              <tr><td><code>position_of(vow_id, who)</code></td><td><code>{ faith, doubt, payout, claimed, challenged, disputed }</code> for one address on one vow.</td></tr>
             </tbody>
           </table>
 
@@ -381,10 +423,17 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
   "faith": "400000000000000000",
   "faith_cap": "500000000000000000",
   "doubt": "400000000000000000",
-  "state": 0,              // 0 open · 1 kept · 2 broken · 3 unclear
+  "provenance": "mutable", // snapshot · permalink · mutable
+  "state": 0,              // 0 open · 1 kept · 2 broken · 3 unclear · 4 review
   "tries": 0,              // unreadable-page attempts so far
   "note": "",              // the judges' one-sentence note
-  "counters": ["https://…"]
+  "counters": ["https://…"],
+  "pins": ["https://…"],
+  "disputes": ["https://…"],
+  "proposed": 0,           // 1 kept · 2 broken, while in review
+  "proposed_at": 0,
+  "review_end": 0,
+  "proof": null            // { url, tier, quote, date, hash } once a kept verdict is proposed
 }</code></pre>
         </section>
 
@@ -412,13 +461,27 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
               <tr><td>Counter-evidence must be a single http(s) link.</td></tr>
               <tr><td>That page is already part of the evidence.</td></tr>
               <tr><td>The counter-evidence slots are held by larger doubters.</td></tr>
-              <tr><td rowspan="5"><code>judge</code></td><td>This vow has already been judged.</td></tr>
+              <tr><td rowspan="5"><code>judge</code></td><td>This vow has already been judged. / A verdict is already proposed. Call finalize when the review window ends.</td></tr>
               <tr><td>Early judging opens halfway to the deadline.</td></tr>
               <tr><td>Early judging is only possible while nobody doubts the vow.</td></tr>
               <tr><td>Wait fifteen minutes before checking early again. / Wait an hour before asking again.</td></tr>
               <tr><td>[LLM_ERROR] … the judge did not return a usable verdict. Validators disagree and the network picks a new leader; call again if it persists.</td></tr>
               <tr><td><code>release</code></td><td>A vow can be released thirty days after its deadline.</td></tr>
-              <tr><td rowspan="2"><code>claim</code></td><td>Already claimed.</td></tr>
+              <tr><td rowspan="5"><code>pin_evidence</code></td><td>Only the keeper can pin evidence. / The deadline has passed. Evidence can no longer be added.</td></tr>
+              <tr><td>A pin must be an archive snapshot or a commit-pinned link.</td></tr>
+              <tr><td>The snapshot must be taken before now and before the deadline.</td></tr>
+              <tr><td>A vow takes at most two pins.</td></tr>
+              <tr><td>That page is already part of the evidence.</td></tr>
+              <tr><td rowspan="6"><code>dispute</code></td><td>This vow is not under review. / The review window has closed.</td></tr>
+              <tr><td>Only doubters can dispute a kept verdict.</td></tr>
+              <tr><td>Only the keeper and faith backers can dispute a broken verdict.</td></tr>
+              <tr><td>You already submitted a dispute.</td></tr>
+              <tr><td>The dispute slots are held by larger positions.</td></tr>
+              <tr><td>Counter-evidence must be a single http(s) link. / That page is already part of the evidence.</td></tr>
+              <tr><td rowspan="2"><code>finalize</code></td><td>This vow is not under review.</td></tr>
+              <tr><td>The review window is still open.</td></tr>
+              <tr><td rowspan="3"><code>claim</code></td><td>This vow has no final verdict yet.</td></tr>
+              <tr><td>Already claimed.</td></tr>
               <tr><td>Nothing to claim for this address.</td></tr>
             </tbody>
           </table>
@@ -476,14 +539,16 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           <h3>Prompt injection</h3>
           <ul>
             <li>Vow text and page text are stripped of angle brackets and passed to the model as tagged data with an instruction to ignore commands inside them. This reduces prompt injection, it does not remove it.</li>
-            <li>Both keeper and counter-evidence pages are wrapped as untrusted data, and only the verdict is compared across validators.</li>
+            <li>Both keeper and counter-evidence pages are wrapped as untrusted data. The verdict is compared across validators, and a favourable verdict also needs a verbatim, dated quote that every validator finds on its own copy of the page, so a page that merely announces its own verdict cannot win.</li>
           </ul>
 
           <h3>Evidence and incentives</h3>
           <ul>
             <li>A keeper who controls the evidence page can write anything on it. Prefer pages the keeper cannot edit alone, such as a public repository, a commit history or a third-party listing.</li>
-            <li>The judge only sees the first 6,000 characters of text on the evidence page.</li>
-            <li>Judging happens once, when <code>judge</code> is called after the deadline. A page that changes later does not reopen the verdict.</li>
+            <li>The judge only sees the first 6,000 characters of text on the evidence page, so a quote has to come from there.</li>
+            <li>An editable page can still carry a backdated line. The check proves the page claims the work was done by the deadline, not that it was. The review window and firm records answer a lie: an archive capture from before the deadline that shows the page empty outweighs the page, so pin your own proof and capture suspicious pages before the deadline.</li>
+            <li>The contract cannot see which capture an archive link finally serves. Use the exact capture link; a link for a time with no capture may be answered with the nearest one.</li>
+            <li>A vow is read at <code>judge</code>, may be read again at <code>finalize</code> when pages were disputed, and is never reopened after that.</li>
             <li>A fixed 0.01 GEN doubt can win a large share of a broken vow when nobody else doubts. That is intended, and it is why keepers should choose stakes they are willing to lose.</li>
             <li>Anyone can fill the faith cap of a vow with a single backing, which stops others from adding faith. It costs the backer nothing if the vow is kept.</li>
             <li>A doubter who stakes 0.01 GEN switches off early confirmation for that vow. It costs them the 0.01 GEN if the vow is kept.</li>
@@ -514,6 +579,7 @@ pytest</code></pre>
             <li>streaks, paging and validator agreement</li>
           </ul>
           <p><code>tests/direct/test_economics.py</code> checks the payout math on its own: payouts never exceed the pool, and rounding dust stays at a few wei. <code>test_hardening.py</code> and <code>test_economics.py</code> need no VM.</p>
+          <p><code>tests/direct/test_adversarial.py</code> holds the adversarial and end-to-end tests: manipulated evidence (invented quotes, undated or late work, prompt injection, validators that cannot find the leader's quote), post-deadline edits against firm records, coordinated counter-evidence and slot crowding, and complete stake, review, finalize and claim runs whose <code>deposited</code>, <code>paid</code> and <code>embers</code> totals must balance.</p>
           <p>The Python test tools are pinned in <code>requirements.txt</code>.</p>
         </section>
 

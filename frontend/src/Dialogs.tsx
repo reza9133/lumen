@@ -81,8 +81,9 @@ export function AboutDialog(p: { onClose: () => void }) {
         <ol>
           <li><strong>Make a vow.</strong> Write what you will do, stake GEN, and name the web page that will prove it.</li>
           <li><strong>Others take sides.</strong> Friends back you with faith. Skeptics put GEN on doubt and can add pages that argue the vow failed. Both stay open until the deadline.</li>
-          <li><strong>Validators read the page.</strong> After the deadline, each validator reads the evidence and votes. They must agree on the verdict, not on the wording. A vow nobody doubts can be confirmed early, once half of the time has passed.</li>
-          <li><strong>Claim.</strong> Kept vows return the stake and pay the faith side. Broken vows burn half the stake and pay the doubters. If nobody doubted a broken vow, the whole stake and the faith behind it are burned. Burned GEN is shown as embers drifting down the sky.</li>
+          <li><strong>Validators read the page.</strong> After the deadline, each validator reads the evidence and votes. A favourable verdict needs a verbatim quote and a date on or before the deadline, and every validator must find that quote on its own copy of the page. A vow nobody doubts can be confirmed early, once half of the time has passed.</li>
+          <li><strong>Review.</strong> A kept or broken verdict is first a proposal. The losing side can submit a page during a review window; archive captures and commit links outweigh editable pages. Then anyone finalizes it.</li>
+          <li><strong>Claim.</strong> Once the verdict is final. Kept vows return the stake and pay the faith side. Broken vows burn half the stake and pay the doubters. If nobody doubted a broken vow, the whole stake and the faith behind it are burned. Burned GEN is shown as embers drifting down the sky.</li>
         </ol>
         <p className="meta">Lantern brightness shows the size of the pool. Gold lanterns are kept, dim red ones are broken, and a gold line joins kept lanterns lit by the same keeper.</p>
         <button onClick={p.onClose}>Got it</button>

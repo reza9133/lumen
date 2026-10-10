@@ -18,13 +18,20 @@ export type Vow = {
   faith: string;
   faith_cap: string; // most faith the vow can take: half of the stake
   doubt: string;
-  state: number; // 0 open, 1 kept, 2 broken, 3 unclear
+  state: number; // 0 open, 1 kept, 2 broken, 3 unclear, 4 in review (a verdict is proposed and can be disputed)
   tries: number;
   note: string;
   counters: string[]; // pages doubters submitted as counter-evidence
+  provenance: "snapshot" | "permalink" | "mutable"; // how hard the main evidence page is to rewrite
+  pins: string[]; // immutable proof the keeper attached before the deadline
+  disputes: string[]; // pages submitted during the review window
+  proposed: number; // 1 kept or 2 broken while in review
+  proposed_at: number;
+  review_end: number;
+  proof: { url: string; tier: "snapshot" | "permalink" | "mutable"; quote: string; date: string; hash: string } | null;
 };
-export type Stats = { total: number; kept: number; broken: number; embers: string };
-export type Position = { faith: string; doubt: string; payout: string; claimed: boolean; challenged: boolean };
+export type Stats = { total: number; kept: number; broken: number; embers: string; deposited: string; paid: string };
+export type Position = { faith: string; doubt: string; payout: string; claimed: boolean; challenged: boolean; disputed: boolean };
 export type KeeperRecord = { kept: number; broken: number; streak: number; best: number; kept_stake: string };
 
 const reader: any = sdk.createClient({ chain: studionet });
@@ -119,6 +126,20 @@ const CONTRACT_ERRORS = [
   "Faith backing is capped at half of the keeper's stake.",
   "Already claimed.",
   "Nothing to claim for this address.",
+  "This vow has no final verdict yet.",
+  "The deadline has passed. Evidence can no longer be added.",
+  "Only the keeper can pin evidence.",
+  "A pin must be an archive snapshot or a commit-pinned link.",
+  "The snapshot must be taken before now and before the deadline.",
+  "A vow takes at most two pins.",
+  "This vow is not under review.",
+  "The review window has closed.",
+  "The review window is still open.",
+  "Only doubters can dispute a kept verdict.",
+  "Only the keeper and faith backers can dispute a broken verdict.",
+  "You already submitted a dispute.",
+  "The dispute slots are held by larger positions.",
+  "A verdict is already proposed. Call finalize when the review window ends.",
 ];
 
 const CLOCK_HINT = [

@@ -53,13 +53,14 @@ export const alias = (addr: string) => {
   return `${FIRST[Math.floor(hash01(a, 1) * FIRST.length)]} ${SECOND[Math.floor(hash01(a, 2) * SECOND.length)]}`;
 };
 
-export type Phase = "burning" | "due" | "kept" | "broken" | "unclear";
+export type Phase = "burning" | "due" | "review" | "kept" | "broken" | "unclear";
 export const phaseOf = (state: number, deadline: number, now: number): Phase =>
-  state === 1 ? "kept" : state === 2 ? "broken" : state === 3 ? "unclear" : now >= deadline ? "due" : "burning";
+  state === 4 ? "review" : state === 1 ? "kept" : state === 2 ? "broken" : state === 3 ? "unclear" : now >= deadline ? "due" : "burning";
 
 export const PHASE_LABEL: Record<Phase, string> = {
   burning: "Burning",
   due: "Awaiting verdict",
+  review: "In review",
   kept: "Kept",
   broken: "Broken",
   unclear: "Unclear",

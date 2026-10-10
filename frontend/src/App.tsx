@@ -17,7 +17,7 @@ const REPO_URL = "https://github.com/reza9133/lumen";
 type Toast = { kind: "ok" | "err" | "busy"; msg: string };
 type Tip = { id: number; x: number; y: number } | null;
 
-const FILTERS: (Phase | "all")[] = ["all", "burning", "due", "kept", "broken"];
+const FILTERS: (Phase | "all")[] = ["all", "burning", "due", "review", "kept", "broken"];
 
 export default function App() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -182,6 +182,7 @@ export default function App() {
             <div><dt>Broken</dt><dd>{stats.broken}</dd></div>
             {total > 0 && <div><dt>Kept rate</dt><dd>{Math.round((stats.kept * 100) / total)}%</dd></div>}
             <div><dt>Embers burned</dt><dd>{gen(stats.embers)}</dd></div>
+            <div><dt>Paid out</dt><dd>{gen(stats.paid)}</dd></div>
           </dl>
         )}
         <div className="head-actions">
@@ -263,8 +264,11 @@ export default function App() {
           onBack={(side, wei) =>
             run(side === "faith" ? "Adding your faith" : "Adding your doubt", side === "faith" ? "Faith added." : "Doubt added.", "back", [v.id, side], wei)
           }
-          onJudge={() => run("Validators are reading the evidence. This can take a minute or two.", "Judging finished. Check the lantern.", "judge", [v.id])}
+          onJudge={() => run("Validators are reading the evidence. This can take a minute or two.", "A verdict is proposed. Check the lantern for the review window.", "judge", [v.id])}
           onChallenge={(url) => run("Adding your counter-evidence", "Counter-evidence added.", "challenge", [v.id, url])}
+          onPin={(url) => run("Pinning your proof", "Proof pinned.", "pin_evidence", [v.id, url])}
+          onDispute={(url) => run("Adding your dispute", "Dispute added.", "dispute", [v.id, url])}
+          onFinalize={() => run("Finalizing. If pages were disputed the validators read them again, which can take a minute or two.", "Verdict final. Check the lantern.", "finalize", [v.id])}
           onRelease={() => run("Releasing the stakes", "Released. Everyone can now claim a refund.", "release", [v.id])}
           onClaim={() => run("Claiming", "Claim submitted. The payout arrives when the transaction finalizes.", "claim", [v.id])}
         />

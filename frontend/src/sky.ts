@@ -80,7 +80,7 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
       const fx = Math.min(0.94, Math.max(0.06, cx + (frac(v.id * 0.61803398875) - 0.5) * 0.15));
       const band =
         v.state === 1 ? frac(v.id * 0.29) * 0.28
-        : v.state === 0 ? 0.36 + frac(v.id * 0.37) * 0.32
+        : v.state === 0 || v.state === 4 ? 0.36 + frac(v.id * 0.37) * 0.32
         : 0.78 + frac(v.id * 0.41) * 0.22;
       const pool = Number((BigInt(v.stake) + BigInt(v.faith) + BigInt(v.doubt)) / 10n ** 16n);
       return { v, x: fx * w, y: top + band * span, r: (15 + Math.min(20, Math.log10(1 + pool) * 7)) * scale };

@@ -79,12 +79,68 @@ export const KIND_LABEL: Record<EvidenceKind, string> = {
 };
 
 export const EDITABLE_HINT =
-  "Whoever controls this page can change it. A public commit, a release or an archived snapshot makes a stronger vow.";
+  "Whoever controls this page can change it. Before the deadline you can pin an exact archive capture or a commit link next to it. Editable proof gets a longer review window and can be outweighed by a firm record.";
 
-// A vow still open this long after its deadline can be released: everyone is refunded.
+// ---- provenance: the same shapes the contract recognises -------------------------------------------------
+export type Provenance = "snapshot" | "permalink" | "mutable";
+const SNAPSHOT_RE = /^https?:\/\/web\.archive\.org\/web\/(\d{14})(?:[a-z]{2}_)?\/https?:\/\/\S+$/;
+const PERMALINK_RE = new RegExp(
+  "^https?://(?:www\\.)?(?:github\\.com|gitlab\\.com|codeberg\\.org)/[^/\\s]+/[^/\\s]+/(?:-/)?(?:commit/[0-9a-f]{40}|blob/[0-9a-f]{40}/\\S+)(?:[?#]\\S*)?$" +
+    "|^https?://[^/\\s]+/ipfs/(?:Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-z2-7]{50,})(?:[/?#]\\S*)?$",
+);
+
+export function provenanceOf(url: string): Provenance {
+  if (SNAPSHOT_RE.test(url)) return "snapshot";
+  if (PERMALINK_RE.test(url)) return "permalink";
+  return "mutable";
+}
+
+// Capture time of an exact archive link, in seconds since the epoch; null for any other link.
+export function snapshotTime(url: string): number | null {
+  const m = SNAPSHOT_RE.exec(url);
+  if (m === null) return null;
+  const d = m[1];
+  const t = Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8), +d.slice(8, 10), +d.slice(10, 12), +d.slice(12, 14));
+  return Number.isFinite(t) ? Math.floor(t / 1000) : null;
+}
+
+export const PROVENANCE_LABEL: Record<Provenance, string> = {
+  snapshot: "archive capture, cannot be rewritten",
+  permalink: "permanent link, cannot be rewritten",
+  mutable: "editable by its owner",
+};
+
+// A pin has to be firm, and an archive capture has to exist already.
+export function isPinnable(url: string, now: number, deadline: number): boolean {
+  const kind = provenanceOf(url);
+  if (kind === "mutable") return false;
+  if (kind === "snapshot") {
+    const ts = snapshotTime(url);
+    return ts !== null && ts <= Math.min(now, deadline);
+  }
+  return true;
+}
+export const MAX_PINS = 2;
+
+// A vow still open this long after its deadline (or after its review window) can be released: everyone is refunded.
 export const RELEASE_AFTER = 30 * 86400;
-export const canRelease = (v: Pick<Vow, "state" | "deadline">, now: number): boolean =>
-  v.state === 0 && now >= v.deadline + RELEASE_AFTER;
+export const canRelease = (v: Pick<Vow, "state" | "deadline"> & { review_end?: number }, now: number): boolean =>
+  (v.state === 0 && now >= v.deadline + RELEASE_AFTER) || (v.state === 4 && now >= (v.review_end ?? Infinity) + RELEASE_AFTER);
+
+// A proposed verdict can be disputed until the review window ends, then finalized by anyone.
+export const reviewOpen = (v: Pick<Vow, "state" | "review_end">, now: number): boolean => v.state === 4 && now < v.review_end;
+export const canFinalize = (v: Pick<Vow, "state" | "review_end">, now: number): boolean => v.state === 4 && now >= v.review_end;
+
+// Who may dispute: doubters when a kept verdict is proposed, the keeper and faith backers when a broken one is.
+export function canDispute(
+  v: Pick<Vow, "state" | "review_end" | "proposed">,
+  pos: { faith: string; doubt: string; disputed: boolean } | null,
+  isKeeper: boolean,
+  now: number,
+): boolean {
+  if (!reviewOpen(v, now) || pos === null || pos.disputed) return false;
+  return v.proposed === 1 ? BigInt(pos.doubt) > 0n : isKeeper || BigInt(pos.faith) > 0n;
+}
 
 // Early judging only confirms a vow: halfway to the deadline, and only while nobody doubts it.
 export function canJudgeEarly(v: Pick<Vow, "state" | "created" | "deadline" | "doubt">, now: number): boolean {

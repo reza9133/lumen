@@ -31,7 +31,7 @@ export default function Ledger(p: {
     if (sort === "ending") {
       // Open vows first, nearest deadline on top; judged vows follow, newest first.
       return [...list].sort((a, b) => {
-        const ao = a.state === 0, bo = b.state === 0;
+        const ao = a.state === 0 || a.state === 4, bo = b.state === 0 || b.state === 4;
         if (ao !== bo) return ao ? -1 : 1;
         return ao ? a.deadline - b.deadline : b.id - a.id;
       });
