@@ -1,0 +1,3396 @@
+{
+  "meta": {
+    "mode": "live",
+    "network": "Studionet (https://studio.genlayer.com/api)",
+    "contract": "0x65b24E33838f738C74304Ba6c03A3787bB0C4360",
+    "fixtures": {
+      "base": "https://raw.githubusercontent.com/reza9133/lumen/main/evidence/fixtures",
+      "permalinkBase": "https://github.com/reza9133/lumen/blob/329f96bba3ae8d8802af82d0a91117e219a26ab9/evidence/fixtures",
+      "slug": {
+        "owner": "reza9133",
+        "repo": "lumen"
+      },
+      "branch": "main",
+      "sha": "329f96bba3ae8d8802af82d0a91117e219a26ab9"
+    },
+    "startedAt": "2026-11-13T10:13:50.068Z",
+    "finishedAt": "2026-11-13T10:58:46.623Z",
+    "node": "v24.22.2",
+    "git": {
+      "commit": "329f96bba3ae8d8802af82d0a91117e219a26ab9"
+    },
+    "config": {
+      "scenarios": [
+        "adversarial",
+        "kept",
+        "broken",
+        "retract",
+        "directory"
+      ],
+      "deadlineSecs": 900,
+      "stake": "400000000000000000",
+      "faith": "100000000000000000",
+      "doubt": "60000000000000000"
+    },
+    "deployTx": "0xc693d1f6e42bf7cfd467a328660c3ed9dfe1b02c0580b447ce751a2d8f556ab8"
+  },
+  "result": "PASS: every check held.",
+  "exitCode": 0,
+  "scenarios": {
+    "deploy": {
+      "status": "PASS",
+      "summary": "deployed in tx 0xc693d1f6e42bf7cfd467a328660c3ed9dfe1b02c0580b447ce751a2d8f556ab8"
+    },
+    "adversarial": {
+      "status": "PASS",
+      "summary": "105 checks, retraction and its payout verified"
+    },
+    "kept": {
+      "status": "PASS",
+      "summary": "vow #1 ended KEPT"
+    },
+    "broken": {
+      "status": "PASS",
+      "summary": "vow #2 ended BROKEN"
+    },
+    "retract": {
+      "status": "PASS",
+      "summary": "vow #0 retracted, 0.32 GEN claimed"
+    },
+    "directory": {
+      "status": "PASS",
+      "summary": "5 vows cross-checked against the read model"
+    }
+  },
+  "checks": [
+    {
+      "scenario": "deploy",
+      "name": "the deployed contract is the version in this repository",
+      "pass": true,
+      "detail": "version 2.0.0",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a vow with a too short text: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a vow with a too short text: reason is \"too short\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a vow with a too short text: state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence on an IP address: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence on an IP address: reason is \"single http(s) link\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence on an IP address: state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "state is RETRACTED and the note says why",
+      "pass": true,
+      "detail": "state RETRACTED, note \"The keeper retracted this vow before anyone backed it.\"",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "the stake is counted as 20% burned",
+      "pass": true,
+      "detail": "embers +80000000000000000 (expected 80000000000000000)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "the keeper's record shows one retraction and no streak",
+      "pass": true,
+      "detail": "retracted 1, streak 0",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 320000000000000000, rules 320000000000000000 (state RETRACTED)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence that is not http(s): rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence that is not http(s): reason is \"single http(s) link\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "evidence that is not http(s): state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the pinned link counts as a permalink",
+      "pass": true,
+      "detail": "https://github.com/reza9133/lumen/blob/329f96bba3ae8d8802af82d0a91117e219a26ab9/evidence/fixtures/kept.md",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "backing and notes are on the vow",
+      "pass": true,
+      "detail": "faith 100000000000000000, doubt 60000000000000000, notes 1",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the evidence address is judged as a mutable page",
+      "pass": true,
+      "detail": "mutable",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline closer than one minute: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline closer than one minute: reason is \"Deadline must be\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline closer than one minute: state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR: native GEN arrived after the claim",
+      "pass": true,
+      "detail": "expected 0.32 GEN, balance change 0.32 GEN (transaction fees explain a smaller change)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR: claim is recorded",
+      "pass": true,
+      "detail": "claimed=true",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a second counter-evidence page from the same doubter: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a second counter-evidence page from the same doubter: reason is \"already submitted\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a second counter-evidence page from the same doubter: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "backing and notes are on the vow",
+      "pass": true,
+      "detail": "faith 100000000000000000, doubt 60000000000000000, notes 1",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "the evidence address is judged as a mutable page",
+      "pass": true,
+      "detail": "mutable",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline further than a year: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline further than a year: reason is \"Deadline must be\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a deadline further than a year: state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR claims twice: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR claims twice: reason is \"Already claimed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "keeperR claims twice: state untouched",
+      "pass": true,
+      "detail": "vow #0 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "retract",
+      "name": "every wei on the vow is paid or burned (rounding dust only)",
+      "pass": true,
+      "detail": "vow holds 0.4 GEN; owed 0.32 GEN; burned 0.08 GEN; dust 0 wei",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a stake below the minimum: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a stake below the minimum: reason is \"minimum stake\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a stake below the minimum: state untouched",
+      "pass": true,
+      "detail": "the vows of advKeeper is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the new vow is stored as sent",
+      "pass": true,
+      "detail": "state OPEN, stake 100000000000000000, provenance mutable",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the keeper backing their own vow: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the keeper backing their own vow: reason is \"cannot back their own\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the keeper backing their own vow: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing below the minimum: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing below the minimum: reason is \"minimum backing\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing below the minimum: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a side that does not exist: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a side that does not exist: reason is \"faith or doubt\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a side that does not exist: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "faith above half of the stake: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "faith above half of the stake: reason is \"capped at half\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "faith above half of the stake: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a vow that does not exist: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a vow that does not exist: reason is \"No such vow\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a vow that does not exist: state untouched",
+      "pass": true,
+      "detail": "vow #1003 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update by someone else: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update by someone else: reason is \"Only the keeper\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update by someone else: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update that is too short: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update that is too short: reason is \"too short\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update that is too short: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a retraction by someone else: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a retraction by someone else: reason is \"Only the keeper\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a retraction by someone else: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin that is a mutable page: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin that is a mutable page: reason is \"commit-pinned\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin that is a mutable page: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin from the future: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin from the future: reason is \"before now\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin from the future: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin by someone else: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin by someone else: reason is \"Only the keeper\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a pin by someone else: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "judging before halfway to the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "judging before halfway to the deadline: reason is \"halfway\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "judging before halfway to the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "finalizing a vow that is not under review: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "finalizing a vow that is not under review: reason is \"not under review\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "finalizing a vow that is not under review: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "claiming from an open vow: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "claiming from an open vow: reason is \"no final verdict\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "claiming from an open vow: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "disputing a vow that is not under review: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "disputing a vow that is not under review: reason is \"not under review\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "disputing a vow that is not under review: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "counter-evidence from someone who does not doubt: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "counter-evidence from someone who does not doubt: reason is \"Only doubters\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "counter-evidence from someone who does not doubt: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "backing after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "backing after the deadline: reason is \"no longer takes backing\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "backing after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "backing after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "backing after the deadline: reason is \"no longer takes backing\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "backing after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "releasing a vow that is not 30 days overdue: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "releasing a vow that is not 30 days overdue: reason is \"thirty days\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "releasing a vow that is not 30 days overdue: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "an update after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "an update after the deadline: reason is \"deadline has passed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "an update after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "get_vow for a vow that does not exist fails (No such vow)",
+      "pass": true,
+      "detail": "the read was refused",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "an update after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "an update after the deadline: reason is \"deadline has passed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "an update after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "position_of for a vow that does not exist fails (No such vow)",
+      "pass": true,
+      "detail": "the read was refused",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "a retraction after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "a retraction after the deadline: reason is \"deadline has passed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "a retraction after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a retraction after the deadline: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a retraction after the deadline: reason is \"deadline has passed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "a retraction after the deadline: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the validators proposed KEPT",
+      "pass": true,
+      "detail": "state REVIEW, proposed KEPT, note: The Release 2.0.0 entry was published on 2026-01-15, before the deadline, confirmed by a permalink source.",
+      "kind": "verdict",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the review window is at least ten minutes",
+      "pass": true,
+      "detail": "600s",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the proof tier follows from the proof address",
+      "pass": true,
+      "detail": "tier permalink for https://github.com/reza9133/lumen/blob/329f96bba3ae8d8802af82d0a91117e219a26ab9/evidence/fixtures/kept.md",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "the validators proposed BROKEN",
+      "pass": true,
+      "detail": "state REVIEW, proposed BROKEN, note: Source states release 2.0.0 entry has not been written or published.",
+      "kind": "verdict",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "the review window is at least ten minutes",
+      "pass": true,
+      "detail": "1200s",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "judging again while a verdict is proposed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "judging again while a verdict is proposed: reason is \"already proposed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "judging again while a verdict is proposed: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "judging again while a verdict is proposed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "judging again while a verdict is proposed: reason is \"already proposed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "judging again while a verdict is proposed: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "finalizing before the review window ends: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "finalizing before the review window ends: reason is \"still open\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "finalizing before the review window ends: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "finalizing before the review window ends: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "finalizing before the review window ends: reason is \"still open\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "finalizing before the review window ends: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "claiming during the review window: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "claiming during the review window: reason is \"no final verdict\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "claiming during the review window: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "claiming during the review window: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "claiming during the review window: reason is \"no final verdict\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "claiming during the review window: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a sixth progress note: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a sixth progress note: reason is \"at most five\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a sixth progress note: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "five progress notes are stored in order",
+      "pass": true,
+      "detail": "5 notes",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the vow is retracted",
+      "pass": true,
+      "detail": "state RETRACTED",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "a fifth of the stake is burned and counted as embers",
+      "pass": true,
+      "detail": "embers +20000000000000000, retracted +1",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a retracted vow: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a retracted vow: reason is \"no longer takes backing\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "backing a retracted vow: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting twice: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting twice: reason is \"already been judged\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting twice: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update after the retraction: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update after the retraction: reason is \"already been judged\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "an update after the retraction: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 80000000000000000, rules 80000000000000000 (state RETRACTED)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper: native GEN arrived after the claim",
+      "pass": true,
+      "detail": "expected 0.08 GEN, balance change 0.08 GEN (transaction fees explain a smaller change)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper: claim is recorded",
+      "pass": true,
+      "detail": "claimed=true",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper claims twice: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper claims twice: reason is \"Already claimed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advKeeper claims twice: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advBacker: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 0, rules 0 (state RETRACTED)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advBacker claims with nothing owed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advBacker claims with nothing owed: reason is \"Nothing to claim\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "advBacker claims with nothing owed: state untouched",
+      "pass": true,
+      "detail": "vow #3 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "every wei on the vow is paid or burned (rounding dust only)",
+      "pass": true,
+      "detail": "vow holds 0.1 GEN; owed 0.08 GEN; burned 0.02 GEN; dust 0 wei",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "switching from faith to doubt: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "switching from faith to doubt: reason is \"already back\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "switching from faith to doubt: state untouched",
+      "pass": true,
+      "detail": "vow #4 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the final state is KEPT",
+      "pass": true,
+      "detail": "final KEPT, note: The Release 2.0.0 entry was published on 2026-01-15, before the deadline, confirmed by a permalink source.",
+      "kind": "verdict",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 400000000000000000, rules 400000000000000000 (state KEPT)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting a vow that has backing: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting a vow that has backing: reason is \"has backing\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "retracting a vow that has backing: state untouched",
+      "pass": true,
+      "detail": "vow #4 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "adversarial",
+      "name": "the vow with backing stays open",
+      "pass": true,
+      "detail": "state OPEN, faith 20000000000000000",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK: native GEN arrived after the claim",
+      "pass": true,
+      "detail": "expected 0.4 GEN, balance change 0.4 GEN (transaction fees explain a smaller change)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK: claim is recorded",
+      "pass": true,
+      "detail": "claimed=true",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK claims twice: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK claims twice: reason is \"Already claimed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "keeperK claims twice: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "faithK: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 160000000000000000, rules 160000000000000000 (state KEPT)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "faithK: native GEN arrived after the claim",
+      "pass": true,
+      "detail": "expected 0.16 GEN, balance change 0.16 GEN (transaction fees explain a smaller change)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "faithK: claim is recorded",
+      "pass": true,
+      "detail": "claimed=true",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "doubtK: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 0, rules 0 (state KEPT)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "doubtK claims with nothing owed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "doubtK claims with nothing owed: reason is \"Nothing to claim\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "doubtK claims with nothing owed: state untouched",
+      "pass": true,
+      "detail": "vow #1 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "every wei on the vow is paid or burned (rounding dust only)",
+      "pass": true,
+      "detail": "vow holds 0.56 GEN; owed 0.56 GEN; burned 0 GEN; dust 0 wei",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the keeper's record gains one kept vow and a streak",
+      "pass": true,
+      "detail": "kept 1, streak 1, tier Spark",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "kept",
+      "name": "the tier follows the record",
+      "pass": true,
+      "detail": "tier Spark",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "the final state is BROKEN",
+      "pass": true,
+      "detail": "final BROKEN, note: Source states release 2.0.0 entry has not been written or published.",
+      "kind": "verdict",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "keeperB: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 0, rules 0 (state BROKEN)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "keeperB claims with nothing owed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "keeperB claims with nothing owed: reason is \"Nothing to claim\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "keeperB claims with nothing owed: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "faithB: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 0, rules 0 (state BROKEN)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "faithB claims with nothing owed: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "faithB claims with nothing owed: reason is \"Nothing to claim\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "faithB claims with nothing owed: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB: payout matches the independent rules",
+      "pass": true,
+      "detail": "chain 360000000000000000, rules 360000000000000000 (state BROKEN)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB: native GEN arrived after the claim",
+      "pass": true,
+      "detail": "expected 0.36 GEN, balance change 0.36 GEN (transaction fees explain a smaller change)",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB: claim is recorded",
+      "pass": true,
+      "detail": "claimed=true",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB claims twice: rejected",
+      "pass": true,
+      "detail": "the receipt reports an error result",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB claims twice: reason is \"Already claimed\"",
+      "pass": true,
+      "detail": "reason found in the receipt",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "doubtB claims twice: state untouched",
+      "pass": true,
+      "detail": "vow #2 is unchanged",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "every wei on the vow is paid or burned (rounding dust only)",
+      "pass": true,
+      "detail": "vow holds 0.56 GEN; owed 0.36 GEN; burned 0.2 GEN; dust 0 wei",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "broken",
+      "name": "the keeper's record gains one broken vow and the streak ends",
+      "pass": true,
+      "detail": "broken 1, streak 0",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "params() reports the version of the contract file",
+      "pass": true,
+      "detail": "chain 2.0.0, file 2.0.0",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "params() lists four tiers and six states",
+      "pass": true,
+      "detail": "Constellation, Beacon, Flame, Spark",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "pulse() and stats() agree on the revision",
+      "pass": true,
+      "detail": "rev 31",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "changes_since() returns every vow touched in this run",
+      "pass": true,
+      "detail": "reset false, 5 vows, ours 5",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "every row of changes_since() equals get_vow()",
+      "pass": true,
+      "detail": "5 rows compared",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "an up-to-date cursor gets no rows and a cursor from another contract is told to reset",
+      "pass": true,
+      "detail": "up to date: 0 rows; future cursor reset=true",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "activity feed of vow #0 lists what was done, in order",
+      "pass": true,
+      "detail": "done: made > update > retracted > claimed; feed: made > update > retracted > claimed",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "activity feed of vow #1 lists what was done, in order",
+      "pass": true,
+      "detail": "done: made > faith > doubt > update > pinned > proposed > kept > claimed > claimed; feed: made > faith > doubt > update > pinned > proposed > kept > claimed > claimed",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "activity feed of vow #2 lists what was done, in order",
+      "pass": true,
+      "detail": "done: made > faith > doubt > update > challenged > proposed > broken > claimed; feed: made > faith > doubt > update > challenged > proposed > broken > claimed",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "activity feed of vow #3 lists what was done, in order",
+      "pass": true,
+      "detail": "done: made > update > update > update > update > update > retracted > claimed; feed: made > update > update > update > update > update > retracted > claimed",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "activity feed of vow #4 lists what was done, in order",
+      "pass": true,
+      "detail": "done: made > faith; feed: made > faith",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "the feed is newest first with strictly falling sequence numbers",
+      "pass": true,
+      "detail": "31 entries",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "advKeeper is in the keeper directory with the same profile",
+      "pass": true,
+      "detail": "tier Unlit, vows 2",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "vows_of(advKeeper) matches the newest vows of that keeper",
+      "pass": true,
+      "detail": "2 rows",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "keeperK is in the keeper directory with the same profile",
+      "pass": true,
+      "detail": "tier Spark, vows 1",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "vows_of(keeperK) matches the newest vows of that keeper",
+      "pass": true,
+      "detail": "1 rows",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "keeperB is in the keeper directory with the same profile",
+      "pass": true,
+      "detail": "tier Unlit, vows 1",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "vows_of(keeperB) matches the newest vows of that keeper",
+      "pass": true,
+      "detail": "1 rows",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "keeperR is in the keeper directory with the same profile",
+      "pass": true,
+      "detail": "tier Unlit, vows 1",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "vows_of(keeperR) matches the newest vows of that keeper",
+      "pass": true,
+      "detail": "1 rows",
+      "kind": "behavior",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "the vow count grew by the vows of this run",
+      "pass": true,
+      "detail": "+5, vows made 5",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "the burned total grew by what the rules burn",
+      "pass": true,
+      "detail": "embers +300000000000000000, rules 300000000000000000",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "the paid total grew by what was claimed",
+      "pass": true,
+      "detail": "paid +1320000000000000000, claimed 1320000000000000000",
+      "kind": "invariant",
+      "level": ""
+    },
+    {
+      "scenario": "directory",
+      "name": "the contract holds at least what is still claimable",
+      "pass": true,
+      "detail": "balance 1.211 GEN, claimable 0.12 GEN",
+      "kind": "invariant",
+      "level": ""
+    }
+  ],
+  "tables": [
+    {
+      "title": "Accounts",
+      "head": [
+        "role",
+        "address",
+        "funding",
+        "balance at start"
+      ],
+      "rows": [
+        [
+          "deployer",
+          "0x1C0F1EB7079dd75F2F543CBBe388C2747eee0cfb",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "advKeeper",
+          "0x94e02a932016C72694C23E5Bb156781B632A884b",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "advBacker",
+          "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "keeperK",
+          "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "faithK",
+          "0xCE68bC69b7E536b296D21D1820b4B6831D3197c2",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "doubtK",
+          "0xc5874044bf98C04355cA21a85276Ed529B8c1Cea",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "keeperB",
+          "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "faithB",
+          "0xF94239C5655D5596c64840B7a61b1C42FcF7C3dE",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "doubtB",
+          "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ],
+        [
+          "keeperR",
+          "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+          "funded by sim_fundAccount",
+          "1 GEN"
+        ]
+      ]
+    },
+    {
+      "title": "Payouts, retract vow #0 (RETRACTED)",
+      "head": [
+        "account",
+        "role",
+        "payout by the rules",
+        "balance before",
+        "balance after",
+        "change",
+        "claim tx"
+      ],
+      "rows": [
+        [
+          "keeperR",
+          "keeper",
+          "0.32 GEN",
+          "0.6 GEN",
+          "0.92 GEN",
+          "0.32 GEN",
+          "0x5250f0e6bfa2f16700dbb3b351f5910537875bb4e3b99ccf01cae55f6c361df0"
+        ]
+      ]
+    },
+    {
+      "title": "Payouts, adversarial vow #3 (RETRACTED)",
+      "head": [
+        "account",
+        "role",
+        "payout by the rules",
+        "balance before",
+        "balance after",
+        "change",
+        "claim tx"
+      ],
+      "rows": [
+        [
+          "advKeeper",
+          "keeper",
+          "0.08 GEN",
+          "0.33 GEN",
+          "0.41 GEN",
+          "0.08 GEN",
+          "0x47c2a916e7f02986e557549fc6ba63efcbf79dd7c49886715235604ef90d926f"
+        ],
+        [
+          "advBacker",
+          "backer",
+          "0",
+          "-",
+          "-",
+          "-",
+          "nothing to claim (rejected)"
+        ]
+      ]
+    },
+    {
+      "title": "Payouts, kept vow #1 (KEPT)",
+      "head": [
+        "account",
+        "role",
+        "payout by the rules",
+        "balance before",
+        "balance after",
+        "change",
+        "claim tx"
+      ],
+      "rows": [
+        [
+          "keeperK",
+          "keeper",
+          "0.4 GEN",
+          "0.6 GEN",
+          "1 GEN",
+          "0.4 GEN",
+          "0x33ce4b2e3ea4f54957da3871cfd1b42a5fe8783cc630e5e66fb1a85a52426770"
+        ],
+        [
+          "faithK",
+          "backer",
+          "0.16 GEN",
+          "0.9 GEN",
+          "1.06 GEN",
+          "0.16 GEN",
+          "0x471bfc6fbe3ffb3b592419c28d2948d469eb19db923f63b54c2b4072e6e563ef"
+        ],
+        [
+          "doubtK",
+          "backer",
+          "0",
+          "-",
+          "-",
+          "-",
+          "nothing to claim (rejected)"
+        ]
+      ]
+    },
+    {
+      "title": "Payouts, broken vow #2 (BROKEN)",
+      "head": [
+        "account",
+        "role",
+        "payout by the rules",
+        "balance before",
+        "balance after",
+        "change",
+        "claim tx"
+      ],
+      "rows": [
+        [
+          "keeperB",
+          "keeper",
+          "0",
+          "-",
+          "-",
+          "-",
+          "nothing to claim (rejected)"
+        ],
+        [
+          "faithB",
+          "backer",
+          "0",
+          "-",
+          "-",
+          "-",
+          "nothing to claim (rejected)"
+        ],
+        [
+          "doubtB",
+          "backer",
+          "0.36 GEN",
+          "0.92 GEN",
+          "1.28 GEN",
+          "0.36 GEN",
+          "0x684da3b1ce8c595ac5bc0756e82583921c140d93883dafb84e5e2e9138e1f063"
+        ]
+      ]
+    },
+    {
+      "title": "Contract totals",
+      "head": [
+        "",
+        "before the run",
+        "after the run"
+      ],
+      "rows": [
+        [
+          "vows",
+          0,
+          5
+        ],
+        [
+          "kept / broken / retracted",
+          "0 / 0 / 0",
+          "1 / 1 / 2"
+        ],
+        [
+          "keepers",
+          0,
+          4
+        ],
+        [
+          "deposited",
+          "0 GEN",
+          "1.74 GEN"
+        ],
+        [
+          "paid",
+          "0 GEN",
+          "1.32 GEN"
+        ],
+        [
+          "burned (embers)",
+          "0 GEN",
+          "0.3 GEN"
+        ],
+        [
+          "feed revision",
+          0,
+          31
+        ]
+      ]
+    }
+  ],
+  "notes": [
+    "Vow #4 (adversarial) is left open on purpose: it holds 0.12 GEN until its deadline."
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "scenario": "deploy",
+      "fn": "(deploy)",
+      "caller": "deployer",
+      "address": "0x1C0F1EB7079dd75F2F543CBBe388C2747eee0cfb",
+      "value": "0",
+      "hash": "0xc693d1f6e42bf7cfd467a328660c3ed9dfe1b02c0580b447ce751a2d8f556ab8",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 15,
+      "reason": ""
+    },
+    {
+      "n": 2,
+      "scenario": "retract",
+      "fn": "make_vow",
+      "caller": "keeperR",
+      "address": "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+      "value": "400000000000000000",
+      "hash": "0x6b39d5d3d289ca39c2610ee0e64f0826a5bdfe148da17f22f1b8674a0517a1a5",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 3,
+      "scenario": "kept",
+      "fn": "make_vow",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "400000000000000000",
+      "hash": "0x8544dfe5f440067f326084181c522eb109b42616a14806fae86718285e5fa133",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 4,
+      "scenario": "broken",
+      "fn": "make_vow",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "400000000000000000",
+      "hash": "0x32e9cee18e63690fee606ee4bbcbe68fd3447c96a5b52a54eec769e0cb31a22d",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 5,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x331954bc2f4188c3966001c4939e3f2c2de3f4bc7bf2d1d9cdcba3ede9b4147e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": "",
+      "balanceBefore": "1000000000000000000"
+    },
+    {
+      "n": 6,
+      "scenario": "retract",
+      "fn": "post_update",
+      "caller": "keeperR",
+      "address": "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+      "value": "0",
+      "hash": "0x9e0be3ad45dd1c10d69428d47c85879588c258fb85e19e9ca4ded33fc6b1b508",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 7,
+      "scenario": "kept",
+      "fn": "back",
+      "caller": "faithK",
+      "address": "0xCE68bC69b7E536b296D21D1820b4B6831D3197c2",
+      "value": "100000000000000000",
+      "hash": "0xd985b0fc19f52d30f77376e1402a389203b8632e510e612f41a42f69c0b36c08",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 8,
+      "scenario": "broken",
+      "fn": "back",
+      "caller": "faithB",
+      "address": "0xF94239C5655D5596c64840B7a61b1C42FcF7C3dE",
+      "value": "100000000000000000",
+      "hash": "0x851221f8e71f8f884505cd9ab2359bfa17e8ad35a69d89fe29ba76cfe458d14f",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": ""
+    },
+    {
+      "n": 9,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x0f790525b081847951de10de4c0bac2fd918c6796d5af1eb2b7a9a962fe4bfc0",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": "",
+      "balanceBefore": "900000000000000000"
+    },
+    {
+      "n": 10,
+      "scenario": "retract",
+      "fn": "retract",
+      "caller": "keeperR",
+      "address": "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+      "value": "0",
+      "hash": "0x3fa96ff8bc2fccde6b444d0c9164229477a2903881524edf7197be1bd00b5ee6",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 11,
+      "scenario": "kept",
+      "fn": "back",
+      "caller": "doubtK",
+      "address": "0xc5874044bf98C04355cA21a85276Ed529B8c1Cea",
+      "value": "60000000000000000",
+      "hash": "0xf235d2eb0c6eea10abd14f8ada88831bd86c18d471718d9f2197a2eecebbf006",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 12,
+      "scenario": "broken",
+      "fn": "back",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "60000000000000000",
+      "hash": "0x3c899135eb830546be5b05beff9145c4ab184db25814edd567e066fdb78b4132",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 13,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x444ef7b65b8b7abd208b83b6dda69415a4ff93b31c60965f8322cf5fbce7656e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 59,
+      "reason": "",
+      "balanceBefore": "800000000000000000"
+    },
+    {
+      "n": 14,
+      "scenario": "kept",
+      "fn": "post_update",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0xc09addf2ea088791b0b2f59aa1c0f552fa68a296c7489261f743560e4bc5e518",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 15,
+      "scenario": "broken",
+      "fn": "post_update",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x2c6ab8c1e6f90711f60e58508b79216e55cd21d2f861d11ed73cf294d46c3f2e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 16,
+      "scenario": "retract",
+      "fn": "claim",
+      "caller": "keeperR",
+      "address": "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+      "value": "0",
+      "hash": "0x5250f0e6bfa2f16700dbb3b351f5910537875bb4e3b99ccf01cae55f6c361df0",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": "",
+      "finalized": null
+    },
+    {
+      "n": 17,
+      "scenario": "kept",
+      "fn": "pin_evidence",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x7df57417cfe263b52bb186a33a87b946cc03efdddd709b12fdd0feeae11a3a20",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 18,
+      "scenario": "broken",
+      "fn": "challenge",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "0",
+      "hash": "0x153761d6f70f92638c5d9c2be475d95c2b384328545021e0ef7bdd01331b523e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 60,
+      "reason": ""
+    },
+    {
+      "n": 19,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x67ed4aec7f5b2c56db99e963b03e3b371ae7ce619893a65161d3eaaf19e69a42",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 51,
+      "reason": "",
+      "balanceBefore": "700000000000000000"
+    },
+    {
+      "n": 20,
+      "scenario": "broken",
+      "fn": "challenge",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "0",
+      "hash": "0x730e8deb296c847f9723c19a5c02cfbbfcec8e28533aaeaf88785454672533d0",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 39,
+      "reason": "",
+      "balanceBefore": "940000000000000000"
+    },
+    {
+      "n": 21,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x31ac5005bb013b52c53199cf87e8fbfb5eecf04c498d02818505b16ef53cdde0",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 42,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 22,
+      "scenario": "retract",
+      "fn": "claim",
+      "caller": "keeperR",
+      "address": "0xC2ad365CEC1ec59B2573ee48738fCfa33A14B63a",
+      "value": "0",
+      "hash": "0xd15e91ebc9e42d558aba190ea42107dd032a3fcab7e947eceb0dd00dd657b561",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 34,
+      "reason": "",
+      "balanceBefore": "920000000000000000"
+    },
+    {
+      "n": 23,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "50000000000000000",
+      "hash": "0x8192db4841e5ae848640f59eaccc1449f5c005da3ebfc369d00bad5b7a5fac40",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 32,
+      "reason": "",
+      "balanceBefore": "500000000000000000"
+    },
+    {
+      "n": 24,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0xa09f72972f9297eb6867db9d0fe5667b118ecb1c189056ac8f3415076f836c1d",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": ""
+    },
+    {
+      "n": 25,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "20000000000000000",
+      "hash": "0x352c72552d3944380741849a3efe16859a25a40ad69cf7f9e95b1f15a236dc88",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "350000000000000000"
+    },
+    {
+      "n": 26,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "1000000000000000",
+      "hash": "0x1be3fd5b2a0adbdb12be561b386b8ffd07e2081c76d108194d983cac681e79e3",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "1000000000000000000"
+    },
+    {
+      "n": 27,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "20000000000000000",
+      "hash": "0x7daf9f14af12c52cc3ee82217f3bd79268880a530274eb3ad2af2f08a36b00e7",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "999000000000000000"
+    },
+    {
+      "n": 28,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "100000000000000000",
+      "hash": "0xc42023b3f5b6c15036e7c672a424bcf11aea7ec39cc7e1d7f4e3a1eb03bd7505",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "979000000000000000"
+    },
+    {
+      "n": 29,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "20000000000000000",
+      "hash": "0x9242a6823fbf03528eec9fa89a0ee189ea2b5740092d7da3f3b95349253b994f",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "879000000000000000"
+    },
+    {
+      "n": 30,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x88f2f47e60eef9d09bc89c0e1b835de633a7eed9af8c51e33b3080db81382573",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 31,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xda7ae6015c7fbed58d3f2e0f661bdc9f768971393c88499623b7ae034dd06c1c",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 32,
+      "scenario": "adversarial",
+      "fn": "retract",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x01e15701a0c0e7e05d58f8250896bc292464455d0a5f877a5574840665a6e308",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 33,
+      "scenario": "adversarial",
+      "fn": "pin_evidence",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xe178ae1ef4bfa2f67d360937fa11c32db57f61a4082fda60d7c577fa67f98d53",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 34,
+      "scenario": "adversarial",
+      "fn": "pin_evidence",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0x1dbbf2916b69a6e4334ee34260d3ad8983b3a7e42f97f762b840f6b6db996649",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 35,
+      "scenario": "adversarial",
+      "fn": "pin_evidence",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x5b3fc3346c92e96f16221223ebc1936823e5312a34e20ce85b4b2eca3b17e20a",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 36,
+      "scenario": "adversarial",
+      "fn": "judge",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x95cbd0f9caa6df1c5d7b4a09957f7fab7bc8e5c8859e4ce0ac1e9a3f0fe80c24",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 37,
+      "scenario": "adversarial",
+      "fn": "finalize",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x5089ba17ef826ed763b7997c8e013cf38efa02cb5163bb5baafc95d5dbfb7500",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 38,
+      "scenario": "adversarial",
+      "fn": "claim",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x239a2d9d7e6c5da4b6d9a7244a37f42a630037565fdd3a1a0b2892087c3c8789",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 39,
+      "scenario": "adversarial",
+      "fn": "dispute",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0x5d6b9fcbfad3228f33cd8dfd495c712b20c985888e67aa7b40fdda6754afe80c",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 40,
+      "scenario": "adversarial",
+      "fn": "challenge",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0xb5eab19f6f03c4202593858c0fedd427d1b8b99ffceaadfaee7cabdb21215ef4",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 33,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 41,
+      "scenario": "kept",
+      "fn": "back",
+      "caller": "doubtK",
+      "address": "0xc5874044bf98C04355cA21a85276Ed529B8c1Cea",
+      "value": "20000000000000000",
+      "hash": "0x1f3c9428c786f4f20fa0882ff1105a393c82eb7bee606f50ea95cac7167e2acc",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "940000000000000000"
+    },
+    {
+      "n": 42,
+      "scenario": "broken",
+      "fn": "back",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "20000000000000000",
+      "hash": "0x235c75f05bec39a4134bec20875249896be5ad8aca2cebdc082cde2715f0af85",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "940000000000000000"
+    },
+    {
+      "n": 43,
+      "scenario": "adversarial",
+      "fn": "release",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0xc5dbf334b0ba831065ed2b8f334375d3124831e769a294b56213217a01eef43d",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 44,
+      "scenario": "kept",
+      "fn": "post_update",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x1f0d027ac12fa027105e0eb0cfad7fe9d0b049e53f71a1491e98f8aeed57eabd",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 41,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 45,
+      "scenario": "broken",
+      "fn": "post_update",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x1fc00e0b2ebba972a5219a02a7c7afe9b5df1211a0585aff805b82647575a7ed",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 36,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 46,
+      "scenario": "kept",
+      "fn": "retract",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x046a5f60484b65be9c88543e7bd01701c62b55af25e3eab6660b86c6bddfe75e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 39,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 47,
+      "scenario": "broken",
+      "fn": "retract",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x8459f74c102a628342dd9cb12f3d80f44a74e33192f84e7d9714fb28374671a7",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 41,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 48,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xcc9d1e7eda1b03e701ba65af41a24f9fd1c6473cdf075d2e59be800a65bda87a",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": ""
+    },
+    {
+      "n": 49,
+      "scenario": "kept",
+      "fn": "judge",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0xbed92377b071ea29698f85c10748ec92fff960c18a51a1ea8b771b14068567db",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": ""
+    },
+    {
+      "n": 50,
+      "scenario": "broken",
+      "fn": "judge",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x1f2633e0ceabcca06488d1db5e5397f798c7c04273f0f4f44c8103eebe5db232",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": ""
+    },
+    {
+      "n": 51,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xf7c08139826e8a7c7ba8e1ac2ca8a134ae653bb9e5ceb336b8640443f871000b",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 45,
+      "reason": ""
+    },
+    {
+      "n": 52,
+      "scenario": "kept",
+      "fn": "judge",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x3e3b3e401584d5877b15e5f19db36228e1a96d62ed843f9d283d65733f7da17b",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 53,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xc237b8910f98aee0db39a742f439f57c73fc39a4e4c8441550801e15bea9a082",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 45,
+      "reason": ""
+    },
+    {
+      "n": 54,
+      "scenario": "broken",
+      "fn": "judge",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x6414fd2c74042a99280291c4824102240d5ca015afdabb78149aac6dd3e5b8fd",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 55,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xa733811618004912d16aca29d965e8093f18788bfc0c68f56f1808f22a251c9e",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 45,
+      "reason": ""
+    },
+    {
+      "n": 56,
+      "scenario": "kept",
+      "fn": "finalize",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x4882f71c402dee35dbbe46a145ffacb7d0472e5b397098c5a5b5745aab086226",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 57,
+      "scenario": "broken",
+      "fn": "finalize",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x01a4e8a1bc549d81828705d3af7bd8aeb2367425d3afd55009bb448605660cc1",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 58,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0x62fd949cf6c4c1f03fb53dfff3256356e7d8267798fcefada66de17bc070ba12",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 45,
+      "reason": ""
+    },
+    {
+      "n": 59,
+      "scenario": "kept",
+      "fn": "claim",
+      "caller": "faithK",
+      "address": "0xCE68bC69b7E536b296D21D1820b4B6831D3197c2",
+      "value": "0",
+      "hash": "0xd6aedf0846c55bf3e813eb9b6fc72918cb648f11881bf667ad353609a1af10c7",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "900000000000000000"
+    },
+    {
+      "n": 60,
+      "scenario": "broken",
+      "fn": "claim",
+      "caller": "faithB",
+      "address": "0xF94239C5655D5596c64840B7a61b1C42FcF7C3dE",
+      "value": "0",
+      "hash": "0x3b1c70fb535845113f49a6b860883feba302b7611ba4596fce82be6558ed0874",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 44,
+      "reason": "",
+      "balanceBefore": "900000000000000000"
+    },
+    {
+      "n": 61,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0x1c1a7cb91e1b0d7611e419805ca1b466e712be142bd363746ebe5714f944a748",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 41,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 62,
+      "scenario": "adversarial",
+      "fn": "retract",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xffb4e474689fac44d07ceca2caef316aba96d9250ff76fd288032a6d2e5c2f68",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": ""
+    },
+    {
+      "n": 63,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "20000000000000000",
+      "hash": "0x8a5ba9fb1d4dbc48e2644ab5f0425ee132e4c9a7361af346352f3b8f92d4c6d6",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "859000000000000000"
+    },
+    {
+      "n": 64,
+      "scenario": "adversarial",
+      "fn": "retract",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0x71ba42bb26b61fcab69f59d4d18a311bc5070426ea176b062871f7a7aaaeed3f",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 65,
+      "scenario": "adversarial",
+      "fn": "post_update",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xe9f344b46c9658d7b097ab2a174b49451f53ad35e4f31f59d4806da046fe7301",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "330000000000000000"
+    },
+    {
+      "n": 66,
+      "scenario": "adversarial",
+      "fn": "claim",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0x47c2a916e7f02986e557549fc6ba63efcbf79dd7c49886715235604ef90d926f",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 30,
+      "reason": "",
+      "finalized": null
+    },
+    {
+      "n": 67,
+      "scenario": "adversarial",
+      "fn": "claim",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xb61ee3d76c422ad8c54e6cfd07bbedc23e4277862ae723ca40b996e47f360d55",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 30,
+      "reason": "",
+      "balanceBefore": "410000000000000000"
+    },
+    {
+      "n": 68,
+      "scenario": "adversarial",
+      "fn": "claim",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "0",
+      "hash": "0xd4aea0259363690ee0cb302cdf6ec6e56506bd10660a05229152cc237830f566",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 30,
+      "reason": "",
+      "balanceBefore": "839000000000000000"
+    },
+    {
+      "n": 69,
+      "scenario": "adversarial",
+      "fn": "make_vow",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "100000000000000000",
+      "hash": "0x7a538ae24fc76702524567205f3d59bf2372e95474fcca6ffea64b02ceed245b",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": ""
+    },
+    {
+      "n": 70,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "20000000000000000",
+      "hash": "0xe2731c9679e0992fac509b99295a3b3ad2d9a77723d58cb14a053d73bbc63006",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": ""
+    },
+    {
+      "n": 71,
+      "scenario": "adversarial",
+      "fn": "back",
+      "caller": "advBacker",
+      "address": "0xDbF4987F11f66a9ccEC1b1fD9DBE18593e36A038",
+      "value": "20000000000000000",
+      "hash": "0x7398c323ac3ba47ac39865c67d8c34376885b322373e113328d09ea1590936ac",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 32,
+      "reason": "",
+      "balanceBefore": "819000000000000000"
+    },
+    {
+      "n": 72,
+      "scenario": "kept",
+      "fn": "finalize",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x837f941c7af79f67edd1c02ac4662e6537f47d83a62f5af04c5293175c4844c6",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 23,
+      "reason": ""
+    },
+    {
+      "n": 73,
+      "scenario": "adversarial",
+      "fn": "retract",
+      "caller": "advKeeper",
+      "address": "0x94e02a932016C72694C23E5Bb156781B632A884b",
+      "value": "0",
+      "hash": "0xc39314b8fd4899b620120195ce311f4223b04052d9f687097243c1dcbb34d8a1",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "310000000000000000"
+    },
+    {
+      "n": 74,
+      "scenario": "kept",
+      "fn": "claim",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x33ce4b2e3ea4f54957da3871cfd1b42a5fe8783cc630e5e66fb1a85a52426770",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 25,
+      "reason": "",
+      "finalized": null
+    },
+    {
+      "n": 75,
+      "scenario": "kept",
+      "fn": "claim",
+      "caller": "keeperK",
+      "address": "0x96006CB04a0270C7E40AE9577A6AeD99802e693f",
+      "value": "0",
+      "hash": "0x715424570a9b31f6bcc01bcc7265b204df187722f5545ebe90ab6ad22f74ea6d",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "1000000000000000000"
+    },
+    {
+      "n": 76,
+      "scenario": "kept",
+      "fn": "claim",
+      "caller": "faithK",
+      "address": "0xCE68bC69b7E536b296D21D1820b4B6831D3197c2",
+      "value": "0",
+      "hash": "0x471bfc6fbe3ffb3b592419c28d2948d469eb19db923f63b54c2b4072e6e563ef",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 30,
+      "reason": "",
+      "finalized": null
+    },
+    {
+      "n": 77,
+      "scenario": "kept",
+      "fn": "claim",
+      "caller": "doubtK",
+      "address": "0xc5874044bf98C04355cA21a85276Ed529B8c1Cea",
+      "value": "0",
+      "hash": "0x4f52b3364cec95aaa4a38edb77b04d2ccbc156084cee6ba6c9d628b6b542edc0",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 29,
+      "reason": "",
+      "balanceBefore": "920000000000000000"
+    },
+    {
+      "n": 78,
+      "scenario": "broken",
+      "fn": "finalize",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0xc6b0252cfefe7e7a101da795658c125d9065f3b3a8e414ad405c133be697c2f2",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 28,
+      "reason": ""
+    },
+    {
+      "n": 79,
+      "scenario": "broken",
+      "fn": "claim",
+      "caller": "keeperB",
+      "address": "0xcC0d10eCDDF263c9D91a956aC353Ff4C13609252",
+      "value": "0",
+      "hash": "0x0aa3145ef40758a65050c32a87c7e4327de44f1bbfb8eee4d8960ddeca018a14",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "600000000000000000"
+    },
+    {
+      "n": 80,
+      "scenario": "broken",
+      "fn": "claim",
+      "caller": "faithB",
+      "address": "0xF94239C5655D5596c64840B7a61b1C42FcF7C3dE",
+      "value": "0",
+      "hash": "0x04cd9664bb60d65355b139adc67ed71e58109002dc686e09fbe312829cd9f6d7",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "900000000000000000"
+    },
+    {
+      "n": 81,
+      "scenario": "broken",
+      "fn": "claim",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "0",
+      "hash": "0x684da3b1ce8c595ac5bc0756e82583921c140d93883dafb84e5e2e9138e1f063",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 15,
+      "reason": "",
+      "finalized": null
+    },
+    {
+      "n": 82,
+      "scenario": "broken",
+      "fn": "claim",
+      "caller": "doubtB",
+      "address": "0xF04C65FdcAC2CEa8E4138025ceA92c3cb589cd9d",
+      "value": "0",
+      "hash": "0xc9dd5123774261b5fb10d7f67568ca54d51cbb9a31329081bc3bce692db68d8c",
+      "status": null,
+      "execution": null,
+      "ok": true,
+      "attempt": 1,
+      "seconds": 14,
+      "reason": "",
+      "balanceBefore": "1280000000000000000"
+    }
+  ]
+}
