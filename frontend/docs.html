@@ -23,6 +23,7 @@
       </a>
       <nav class="top-links" aria-label="Project links">
         <a href="/">Open the app</a>
+        <a class="onchain" href="https://www.genlayer.com" target="_blank" rel="noreferrer noopener" aria-label="Built on GenLayer"><span class="gl-mark" aria-hidden="true"></span><span>Built on GenLayer</span></a>
         <a class="gh" href="https://github.com/reza9133/lumen" target="_blank" rel="noreferrer noopener">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.66.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z" /></svg>
           <span>GitHub</span>
@@ -50,8 +51,10 @@
 
           <p class="group">Project</p>
           <a href="#frontend">Frontend</a>
+          <a href="#performance">Performance</a>
           <a href="#security">Security and limits</a>
           <a href="#testing">Testing</a>
+          <a href="#live-e2e">Live end-to-end run</a>
           <a href="#links">Links</a>
         </nav>
       </aside>
@@ -68,15 +71,19 @@
             <div class="card"><h3>Keepers</h3><p>Make a vow with a stake of at least 0.1 GEN and a link to the evidence page.</p></div>
             <div class="card"><h3>Faith and doubt</h3><p>Anyone else can back a vow with faith, or bet against it with doubt, from 0.01 GEN.</p></div>
             <div class="card"><h3>Validators</h3><p>Read the evidence, ask an LLM for a verdict and must agree on the verdict field.</p></div>
+            <div class="card"><h3>Keeper records</h3><p>Every verdict feeds a public record. Kept vows, GEN staked on them and a clean history earn a tier: Spark, Flame, Beacon or Constellation.</p></div>
           </div>
 
           <h2>What is in the repository</h2>
           <table>
             <thead><tr><th>Path</th><th>What it is</th></tr></thead>
             <tbody>
-              <tr><td><code>contracts/lumen.py</code></td><td>The Intelligent Contract: vows, backing, judging and payouts.</td></tr>
-              <tr><td><code>frontend/</code></td><td>Vite and React app. Each vow is a paper lantern in a night sky, with a ledger view, filters, keeper records and a details drawer. This documentation page lives here too.</td></tr>
-              <tr><td><code>tests/direct/</code></td><td>In-memory contract tests with mocked web pages and LLM answers.</td></tr>
+              <tr><td><code>contracts/lumen.py</code></td><td>The Intelligent Contract (version 2.0.0): vows, backing, judging, retraction, progress notes, the activity feed, keeper tiers and payouts.</td></tr>
+              <tr><td><code>frontend/</code></td><td>Vite and React app. Each vow is a paper lantern in a night sky, with a ledger, a keeper directory and keeper pages, an activity feed, a protocol page, pulse charts and a 3D view. Without a contract address it runs on sample data. This documentation page lives here too.</td></tr>
+              <tr><td><code>tests/direct/</code></td><td>In-memory contract tests with mocked web pages and LLM answers: unit, economics, adversarial, a seeded fuzz test and contract-to-frontend parity tests.</td></tr>
+              <tr><td><code>e2e/</code></td><td>The live end-to-end runner for Studionet (made for GitHub Codespaces), with an offline self-check against the real contract and mutation tests of the runner itself.</td></tr>
+              <tr><td><code>evidence/</code></td><td>The pages the live run reads as evidence, and the reports it writes.</td></tr>
+              <tr><td><code>docs/</code></td><td>Long-form documentation in Markdown: architecture, contract API, deployment, testing, security and performance.</td></tr>
             </tbody>
           </table>
 
@@ -87,16 +94,26 @@
             <div><dt>Faith</dt><dd>Backing that the vow will be kept. Total faith on a vow is capped at half of the keeper's stake.</dd></div>
             <div><dt>Doubt</dt><dd>Backing that the vow will be broken. Doubt has no cap.</dd></div>
             <div><dt>Evidence</dt><dd>The public web page the validators read to decide the vow.</dd></div>
-            <div><dt>Embers</dt><dd>GEN burned by broken vows. It stays in the contract and is never paid out. The app shows it as embers drifting down the sky.</dd></div>
+            <div><dt>Retracted</dt><dd>A vow its keeper withdrew before the deadline while nobody had backed it. A fifth of the stake is burned.</dd></div>
+            <div><dt>Progress note</dt><dd>A short public note (4 to 200 characters, at most five per vow) that only the keeper can post. The validators never read notes.</dd></div>
+            <div><dt>Tier</dt><dd>A keeper's standing, computed from kept vows, GEN staked on them and broken vows. See Parameters.</dd></div>
+            <div><dt>Embers</dt><dd>GEN burned by broken or retracted vows. It stays in the contract and is never paid out. The app shows it as embers drifting down the sky.</dd></div>
           </dl>
         </section>
 
         <!-- ───────────────────────── Quick start ───────────────────────── -->
         <section id="quick-start">
           <h2>Quick start</h2>
-          <p>Lumen runs on GenLayer Studionet. You need Node 18 or newer, Python 3.12 or newer and a browser wallet.</p>
+          <p>Lumen runs on GenLayer Studionet. You need Python 3.12 or newer, Node 18 or newer for the app and Node 22 or newer for the live test runner, and a browser wallet.</p>
+
+          <h3>0. Look around without a contract</h3>
+          <pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+          <p>With no contract address configured the app runs in rehearsal mode: sample vows live in the page, every action works against them and nothing is sent to a chain. Add <code>?demo</code> to the address to force it.</p>
 
           <h3>1. Deploy the contract</h3>
+          <div class="callout warn"><strong>Version 2 needs a new deployment.</strong> The way a vow is stored changed, so a contract deployed from version 1 cannot be read by this app and cannot be upgraded in place. Deploy a fresh one and use its address.</div>
           <pre><code>pip install -r requirements.txt
 genvm-lint check contracts/lumen.py
 
@@ -130,8 +147,9 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
           <table>
             <thead><tr><th>Variable</th><th>Where</th><th>Purpose</th></tr></thead>
             <tbody>
-              <tr><td><code>VITE_LUMEN_ADDRESS</code></td><td><code>frontend/.env</code></td><td>Address of the deployed contract. Without it the app shows a notice and disables lighting a lantern.</td></tr>
+              <tr><td><code>VITE_LUMEN_ADDRESS</code></td><td><code>frontend/.env</code></td><td>Address of the deployed contract. Empty means rehearsal mode: sample data, nothing is sent.</td></tr>
               <tr><td><code>DEPLOY_KEY</code></td><td>environment</td><td>Funded private key used by <code>npm run deploy</code>. Never commit it.</td></tr>
+              <tr><td><code>E2E_*</code></td><td>environment</td><td>Settings of the live end-to-end run. See <a href="#live-e2e">Live end-to-end run</a>.</td></tr>
             </tbody>
           </table>
         </section>
@@ -139,7 +157,7 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
         <!-- ───────────────────────── Lifecycle ───────────────────────── -->
         <section id="lifecycle">
           <h2>Vow lifecycle</h2>
-          <p>A vow moves through five states: <code>OPEN</code> (0), <code>KEPT</code> (1), <code>BROKEN</code> (2), <code>UNCLEAR</code> (3) and <code>REVIEW</code> (4). A kept or broken verdict is first only proposed: the vow sits in <code>REVIEW</code> while the losing side can dispute it, and nothing is payable until <code>finalize</code> makes it final. <code>UNCLEAR</code> is final at once.</p>
+          <p>A vow moves through six states: <code>OPEN</code> (0), <code>KEPT</code> (1), <code>BROKEN</code> (2), <code>UNCLEAR</code> (3), <code>REVIEW</code> (4) and <code>RETRACTED</code> (5). A kept or broken verdict is first only proposed: the vow sits in <code>REVIEW</code> while the losing side can dispute it, and nothing is payable until <code>finalize</code> makes it final. <code>UNCLEAR</code> and <code>RETRACTED</code> are final at once.</p>
 
           <ol class="flow">
             <li>
@@ -170,6 +188,12 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
           </ol>
 
           <h3>Optional steps around judging</h3>
+          <h4>Progress notes</h4>
+          <p>Until the deadline the keeper can call <code>post_update(vow_id, text)</code> to leave a short public note (4 to 200 characters, at most five per vow). Notes carry a timestamp and show on the vow's page. They are never given to the judges: only the evidence pages decide a vow.</p>
+
+          <h4>Retraction</h4>
+          <p>Before the deadline, and only while nobody has backed the vow with faith or doubt, the keeper can call <code>retract(vow_id)</code>. A fifth of the stake is burned, the rest is claimable by the keeper, the streak ends and the keeper's record shows a retraction. A vow with any backing cannot be retracted, so nobody is left holding a position on it and a retraction can never be used to dodge a verdict someone bet on.</p>
+
           <h4>Counter-evidence</h4>
           <p>Until the deadline, a doubter can call <code>challenge(vow_id, url)</code> once to point the judges at a page that argues the vow failed. The judges read it together with the keeper's page and treat it as a claim rather than a fact. It is used only when it gives concrete facts (dates, names, links, numbers) that contradict the keeper's page. Counter-evidence can lower a verdict, never raise one.</p>
           <p>A vow keeps at most three such pages. When all slots are taken, a doubter whose doubt is larger than the smallest holder's current doubt replaces that holder, who may then submit again.</p>
@@ -219,9 +243,10 @@ DEPLOY_KEY=0x&lt;funded private key&gt; npm run deploy</code></pre>
               <tr><td><span class="pill kept">Kept</span></td><td>Stake back, plus the doubt pool if nobody backed with faith</td><td>Backing back, plus a pro-rata share of the doubt pool</td><td>Lose their backing</td></tr>
               <tr><td><span class="pill broken">Broken</span></td><td>Loses the stake</td><td>Lose their backing</td><td>Backing back, plus a pro-rata share of half the stake and the whole faith pool</td></tr>
               <tr><td><span class="pill unclear">Unclear</span></td><td>Stake back</td><td>Backing back</td><td>Backing back</td></tr>
+              <tr><td><span class="pill unclear">Retracted</span></td><td>Stake back, minus one fifth that is burned</td><td colspan="2">Nobody: a vow with backing cannot be retracted</td></tr>
             </tbody>
           </table>
-          <p>Half of a broken stake is burned. If nobody doubted a broken vow, its stake and faith pool are burned in full; the app warns faith backers about this before they back a vow nobody doubts. Burned GEN stays in the contract and is never paid out.</p>
+          <p>Half of a broken stake is burned. If nobody doubted a broken vow, its stake and faith pool are burned in full; the app warns faith backers about this before they back a vow nobody doubts. A retraction burns a fifth of the stake. Burned GEN stays in the contract and is never paid out. At every moment <code>deposited</code> minus <code>paid</code>, <code>embers</code> and what is still claimable is never negative and is only rounding dust of a few wei; the test suite checks that after every step of a random walk.</p>
 
           <h3>The formulas</h3>
           <p>With <code>stake</code>, <code>faith</code> and <code>doubt</code> as the vow's totals, and <code>f</code> and <code>d</code> as one address's own faith and doubt:</p>
@@ -232,7 +257,10 @@ BROKEN   doubter: d + ((stake - stake/2) + faith) * d / doubt
          burned : stake/2          if doubt &gt; 0
                   stake + faith    if doubt == 0
 
-UNCLEAR  everyone: their own stake or backing, in full</code></pre>
+UNCLEAR  everyone: their own stake or backing, in full
+
+RETRACTED keeper : stake - stake/5
+          burned : stake/5</code></pre>
           <p>All divisions are integer divisions in wei, so rounding dust stays at a few wei.</p>
 
           <h3>Worked example</h3>
@@ -298,13 +326,23 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           <p>Skeptics can only react while a vow is open. Early confirmation therefore waits until half of the time has passed and is refused as soon as anyone has doubted the vow, so it cannot be used to close the door on a skeptic who is still looking.</p>
 
           <h3>Keeper records</h3>
-          <p><code>record_of(address)</code> returns kept and broken counts, the current streak, the best streak and <code>kept_stake</code>, the total GEN staked on kept vows. Vows can be made with a very small stake, so read the streak together with <code>kept_stake</code>.</p>
+          <p><code>profile_of(address)</code> returns the vows made, the kept, broken and retracted counts, the current and best streak, <code>kept_stake</code> (the total GEN staked on kept vows) and the keeper's <code>tier</code>. Vows can be made with a very small stake, so read the streak together with <code>kept_stake</code>. <code>record_of(address)</code> keeps the shorter version 1 shape.</p>
+          <p>A keeper holds the first tier below whose three conditions are all met. Retractions do not count as broken vows, but they end the streak.</p>
+          <table>
+            <thead><tr><th>Tier</th><th>Kept vows</th><th>GEN staked on kept vows</th><th>Broken vows</th></tr></thead>
+            <tbody>
+              <tr><td>Constellation</td><td>15</td><td>20</td><td>at most 1 per 10 kept</td></tr>
+              <tr><td>Beacon</td><td>7</td><td>5</td><td>at most 1 per 4 kept</td></tr>
+              <tr><td>Flame</td><td>3</td><td>1</td><td>any</td></tr>
+              <tr><td>Spark</td><td>1</td><td>0</td><td>any</td></tr>
+            </tbody>
+          </table>
         </section>
 
         <!-- ───────────────────────── Parameters ───────────────────────── -->
         <section id="parameters">
           <h2>Parameters</h2>
-          <p>Constants defined at the top of <code>contracts/lumen.py</code>.</p>
+          <p>Constants defined at the top of <code>contracts/lumen.py</code>. The <code>params()</code> view reports every one of them, and the app compares its own copy with it (see the Protocol page).</p>
           <table>
             <thead><tr><th>Constant</th><th>Value</th><th>Meaning</th></tr></thead>
             <tbody>
@@ -330,7 +368,14 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
               <tr><td><code>MIN_QUOTE</code> / <code>MAX_QUOTE</code></td><td>12 / 240</td><td>Length of the verbatim quote a favourable verdict rests on.</td></tr>
               <tr><td><code>REVIEW_DIV</code>, <code>REVIEW_MIN</code>, <code>REVIEW_MAX</code></td><td>8, 10 min, 2 days</td><td>Review window: a share of the vow's lifetime, clamped. Doubled for editable proof and broken proposals.</td></tr>
               <tr><td><code>RELEASE_AFTER</code></td><td>30 days</td><td>How long after the deadline a vow can be released.</td></tr>
-              <tr><td><code>PAGE_MAX</code></td><td>60</td><td>Most vows <code>list_vows</code> returns in one call.</td></tr>
+              <tr><td><code>PAGE_MAX</code></td><td>60</td><td>Most vows <code>list_vows</code> and <code>vows_of</code> return in one call.</td></tr>
+              <tr><td><code>MAX_UPDATES</code></td><td>5</td><td>Progress notes per vow.</td></tr>
+              <tr><td><code>MIN_UPDATE</code> / <code>MAX_UPDATE</code></td><td>4 / 200</td><td>Length of a progress note.</td></tr>
+              <tr><td><code>RETRACT_BURN_DIV</code></td><td>5</td><td>A retraction burns <code>stake / 5</code>.</td></tr>
+              <tr><td><code>FEED_MAX</code></td><td>100</td><td>Most entries <code>activity</code> returns in one call.</td></tr>
+              <tr><td><code>KEEPERS_MAX</code></td><td>100</td><td>Most keepers <code>list_keepers</code> returns in one call.</td></tr>
+              <tr><td><code>CHANGES_MAX</code></td><td>60</td><td>Most changed vows <code>changes_since</code> returns. Beyond it the client is told to reload.</td></tr>
+              <tr><td><code>SCAN_MAX</code></td><td>1,500</td><td>Vows <code>vows_of</code> looks at per call before it hands back a cursor.</td></tr>
             </tbody>
           </table>
         </section>
@@ -391,6 +436,16 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           </div>
 
           <div class="api">
+            <h4><code>post_update(vow_id, text)</code></h4>
+            <p>Keeper only, before the deadline, while the vow is open. Adds a public progress note of 4 to 200 characters, at most five per vow. Notes are never read by the judges.</p>
+          </div>
+
+          <div class="api">
+            <h4><code>retract(vow_id)</code></h4>
+            <p>Keeper only, before the deadline, and only while nobody has backed the vow. Burns a fifth of the stake and makes the rest claimable. See <a href="#lifecycle">Vow lifecycle</a>.</p>
+          </div>
+
+          <div class="api">
             <h4><code>claim(vow_id)</code></h4>
             <p>Pays the caller what the verdict owes them. Each address can claim once per vow. The contract records the claim at once; the transfer itself is delivered when the claim transaction finalizes.</p>
           </div>
@@ -404,7 +459,14 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
           <table>
             <thead><tr><th>Method</th><th>Returns</th></tr></thead>
             <tbody>
-              <tr><td><code>stats()</code></td><td><code>{ total, kept, broken, embers, deposited, paid }</code>, with the amounts in wei as strings. <code>deposited - paid</code> is never less than <code>embers</code>.</td></tr>
+              <tr><td><code>stats()</code></td><td><code>{ total, kept, broken, retracted, keepers, embers, deposited, paid, rev, version }</code>, with the amounts in wei as strings. <code>deposited - paid</code> is never less than <code>embers</code>.</td></tr>
+              <tr><td><code>pulse()</code></td><td><code>{ rev, total }</code>: the cheapest possible poll. <code>rev</code> grows by one for every state change.</td></tr>
+              <tr><td><code>params()</code></td><td>Every limit above, the tier table and the state numbers, so a client does not have to copy them.</td></tr>
+              <tr><td><code>changes_since(cursor)</code></td><td><code>{ rev, reset, rows }</code>: the vows that changed since the <code>rev</code> the client saw last, newest first. <code>reset</code> is true when more than 60 vows changed or the cursor is not from this contract, and no rows are sent.</td></tr>
+              <tr><td><code>activity(offset, limit)</code></td><td>The newest state changes across all vows: <code>{ seq, vow, action, at, keeper, text }</code>.</td></tr>
+              <tr><td><code>list_keepers(offset, limit)</code></td><td><code>{ total, rows }</code> with a profile for every keeper, in the order of their first vow.</td></tr>
+              <tr><td><code>profile_of(who)</code></td><td><code>{ address, vows, kept, broken, retracted, streak, best, kept_stake, tier }</code>.</td></tr>
+              <tr><td><code>vows_of(who, cursor, limit)</code></td><td><code>{ rows, next }</code>: one keeper's vows, newest first. Start with cursor <code>-1</code> and pass <code>next</code> back until it is <code>-1</code>.</td></tr>
               <tr><td><code>get_vow(vow_id)</code></td><td>One vow row (see below).</td></tr>
               <tr><td><code>list_vows(offset, limit)</code></td><td>Newest first. <code>limit</code> is clamped to 60.</td></tr>
               <tr><td><code>record_of(who)</code></td><td><code>{ kept, broken, streak, best, kept_stake }</code> for a keeper address.</td></tr>
@@ -425,7 +487,7 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
   "faith_cap": "500000000000000000",
   "doubt": "400000000000000000",
   "provenance": "mutable", // snapshot · permalink · mutable
-  "state": 0,              // 0 open · 1 kept · 2 broken · 3 unclear · 4 review
+  "state": 0,              // 0 open · 1 kept · 2 broken · 3 unclear · 4 review · 5 retracted
   "tries": 0,              // unreadable-page attempts so far
   "note": "",              // the judges' one-sentence note
   "counters": ["https://…"],
@@ -434,7 +496,8 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
   "proposed": 0,           // 1 kept · 2 broken, while in review
   "proposed_at": 0,
   "review_end": 0,
-  "proof": null            // { url, tier, quote, date, hash } once a kept verdict is proposed
+  "proof": null,           // { url, tier, quote, date, hash } once a kept verdict is proposed
+  "updates": [{ "at": 1767226000, "text": "Draft is done." }]
 }</code></pre>
         </section>
 
@@ -481,6 +544,14 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
               <tr><td>Counter-evidence must be a single http(s) link. / That page is already part of the evidence.</td></tr>
               <tr><td rowspan="2"><code>finalize</code></td><td>This vow is not under review.</td></tr>
               <tr><td>The review window is still open.</td></tr>
+              <tr><td rowspan="4"><code>post_update</code></td><td>This vow has already been judged.</td></tr>
+              <tr><td>The deadline has passed. Updates are closed. / Only the keeper can post updates.</td></tr>
+              <tr><td>The update is too short.</td></tr>
+              <tr><td>A vow takes at most five updates.</td></tr>
+              <tr><td rowspan="4"><code>retract</code></td><td>This vow has already been judged.</td></tr>
+              <tr><td>The deadline has passed. A vow can only be retracted before it.</td></tr>
+              <tr><td>Only the keeper can retract a vow.</td></tr>
+              <tr><td>A vow that has backing cannot be retracted.</td></tr>
               <tr><td rowspan="3"><code>claim</code></td><td>This vow has no final verdict yet.</td></tr>
               <tr><td>Already claimed.</td></tr>
               <tr><td>Nothing to claim for this address.</td></tr>
@@ -491,29 +562,51 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
         <!-- ───────────────────────── Frontend ───────────────────────── -->
         <section id="frontend">
           <h2>Frontend</h2>
-          <p>A Vite and React app in <code>frontend/</code>. Each vow is a lantern in a canvas sky, with a ledger view, filters, keeper records and a details drawer.</p>
+          <p>A Vite and React app in <code>frontend/</code>. Each vow is a lantern in a canvas sky. Around it sit a ledger, a keeper directory, keeper pages, an activity feed, a protocol page, pulse charts and a 3D view.</p>
+
+          <h3>Pages</h3>
+          <table>
+            <thead><tr><th>Address</th><th>What it shows</th></tr></thead>
+            <tbody>
+              <tr><td><code>#/</code></td><td>The sky and the ledger. Selecting a lantern opens a drawer with the vow, its notes and the actions that are open to you.</td></tr>
+              <tr><td><code>#/vow/&lt;id&gt;</code></td><td>One vow on a page of its own: state, evidence, notes, backing and the payout preview.</td></tr>
+              <tr><td><code>#/keepers</code></td><td>Every keeper with tier, kept and broken counts and streak.</td></tr>
+              <tr><td><code>#/keeper/&lt;address&gt;</code></td><td>One keeper: standing, record and all their vows.</td></tr>
+              <tr><td><code>#/activity</code></td><td>The newest state changes across all vows.</td></tr>
+              <tr><td><code>#/protocol</code></td><td>The life of a vow as a diagram, a payout calculator, the tiers, and the limits the app has next to the limits the contract reports.</td></tr>
+              <tr><td><code>#/pulse</code></td><td>Charts: where the vows stand, vows lit per day, pool sizes.</td></tr>
+              <tr><td><code>#/space</code></td><td>The vows as a 3D galaxy you can orbit, with hover and click.</td></tr>
+            </tbody>
+          </table>
+          <p>The old <code>#vow=&lt;id&gt;</code> addresses still open the drawer.</p>
+
+          <h3>Files</h3>
           <table>
             <thead><tr><th>File</th><th>Role</th></tr></thead>
             <tbody>
-              <tr><td><code>src/sky.ts</code></td><td>Draws the sky on a canvas. Kept lanterns rise, open ones hover, spent ones sink toward the water. Two kept lanterns of one keeper are joined by a gold line. A verdict that arrives while the page is open bursts into sparks.</td></tr>
-              <tr><td><code>src/chain.ts</code></td><td>Reads the contract through <code>genlayer-js</code> and sends fee parameters only when the network reports that it charges them.</td></tr>
-              <tr><td><code>src/payout.ts</code></td><td>Mirrors the contract's payout rules to preview what an amount would return if a vow is kept, broken or unclear.</td></tr>
-              <tr><td><code>src/evidence.ts</code></td><td>The evidence-link rule (same as the contract's, applied after the link is normalized), link labels and the early-confirmation window.</td></tr>
+              <tr><td><code>src/chain.ts</code></td><td>Reads and writes the contract through <code>genlayer-js</code>, which is loaded on the first read. Counts the reads and bytes it makes.</td></tr>
+              <tr><td><code>src/source.ts</code>, <code>demo.ts</code></td><td>One interface with two implementations: the chain, and an in-page demo with sample vows. Every page works against either.</td></tr>
+              <tr><td><code>src/sync.ts</code></td><td>Incremental sync: one full read, then a poll of <code>pulse</code> every eight seconds and a merge of <code>changes_since</code> when something moved. Pauses when the tab is hidden.</td></tr>
+              <tr><td><code>src/limits.ts</code>, <code>payout.ts</code>, <code>evidence.ts</code></td><td>Copies of the contract's limits, payout rules and evidence-link rule. Tests keep them identical to the contract.</td></tr>
+              <tr><td><code>src/sky.ts</code></td><td>The canvas sky. The background and the constellation lines are drawn once and reused, and the loop stops when the tab is hidden or the page is covered.</td></tr>
+              <tr><td><code>src/space3d.ts</code></td><td>The 3D view, in a chunk that only loads on <code>#/space</code>. Lanterns are one instanced mesh, so a thousand vows are one draw call.</td></tr>
+              <tr><td><code>src/router.ts</code>, <code>clock.ts</code>, <code>context.ts</code></td><td>Hash routes, one shared one-second clock for every countdown, and the React contexts that carry the source and the sync state.</td></tr>
+              <tr><td><code>src/pages/</code></td><td>The pages listed above.</td></tr>
               <tr><td><code>src/eip6963.ts</code>, <code>useWallet.ts</code>, <code>WalletPanel.tsx</code></td><td>Wallet discovery, connection state and the wallet panel.</td></tr>
-              <tr><td><code>src/App.tsx</code>, <code>Drawer.tsx</code>, <code>Ledger.tsx</code>, <code>Dialogs.tsx</code></td><td>Main view, vow details, the searchable ledger and the dialogs.</td></tr>
             </tbody>
           </table>
 
           <h3>Behavior worth knowing</h3>
           <ul>
+            <li><strong>Rehearsal mode.</strong> With <code>VITE_LUMEN_ADDRESS</code> empty, or with <code>?demo</code> in the address, the app runs against sample vows held in the page. Lighting a lantern, backing, posting notes, retracting and claiming all work, and nothing leaves the browser. A notice says so.</li>
+            <li><strong>Version check.</strong> If the configured contract is a version 1 deployment (its <code>stats</code> has no <code>rev</code>), the app says it needs a new deployment instead of showing wrong data.</li>
             <li><strong>Network time.</strong> The app reads the network date from the RPC endpoint when it can and uses it for deadlines and phases, so a device clock that is a few minutes off does not change what you see.</li>
-            <li><strong>Vow links.</strong> Selecting a lantern updates the address bar to <code>#vow=&lt;id&gt;</code>, and the drawer has a Copy link button.</li>
-            <li><strong>Wallets.</strong> Every installed EIP-6963 wallet shows up in a picker. The choice is remembered and reconnected on the next visit unless you disconnected on purpose. The app adds and switches to Studionet for you and follows account and network changes made inside the wallet. The panel shows the address, the GEN balance, your keeper record, the network status, Switch account and Disconnect.</li>
+            <li><strong>Wallets.</strong> Every installed EIP-6963 wallet shows up in a picker. The choice is remembered and reconnected on the next visit unless you disconnected on purpose. The app adds and switches to Studionet for you and follows account and network changes made inside the wallet.</li>
             <li><strong>Ledger.</strong> It can be searched and sorted. With a wallet connected, <em>My vows</em> dims every other keeper's lantern in the sky and filters the ledger.</li>
             <li><strong>Paging.</strong> The app loads the 60 newest vows and shows a Show older vows button when there are more.</li>
             <li><strong>Input.</strong> Stake fields accept a comma as decimal separator and non-Latin digits.</li>
             <li><strong>Evidence labels.</strong> Links are labelled as a public record, an archived snapshot or editable by its owner. This is a hint based on the shape of the address; it does not verify anything. The verified class of the page a kept verdict rests on is <code>proof.tier</code>.</li>
-            <li><strong>Motion.</strong> Animation respects <code>prefers-reduced-motion</code>.</li>
+            <li><strong>Motion.</strong> Animation, including the 3D view, respects <code>prefers-reduced-motion</code>.</li>
           </ul>
 
           <h3>Scripts</h3>
@@ -524,10 +617,42 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
               <tr><td><code>npm run build</code></td><td>Production build of the app and this documentation page.</td></tr>
               <tr><td><code>npm run typecheck</code></td><td>Type-check the sources.</td></tr>
               <tr><td><code>npm run deploy</code></td><td>Deploy the contract and write its address into <code>.env</code>.</td></tr>
-              <tr><td><code>npm run check:payout</code></td><td>Check <code>payout.ts</code> against vectors produced by the contract code.</td></tr>
+              <tr><td><code>npm run check:payout</code></td><td>Check <code>payout.ts</code> against vectors produced by the contract code, retractions included.</td></tr>
               <tr><td><code>npm run check:evidence</code></td><td>Check <code>evidence.ts</code>. Needs Node 22.6 or newer and no install.</td></tr>
+              <tr><td><code>npm run smoke</code></td><td>Open every page in a real browser at desktop and phone width, fail on console or page errors, sideways scrolling or an empty 3D canvas, and check that the SDK and the 3D engine are fetched only when needed. Needs Playwright.</td></tr>
+              <tr><td><code>npm run check</code></td><td>Typecheck, both checks above and a build.</td></tr>
             </tbody>
           </table>
+        </section>
+
+        <section id="performance">
+          <h2>Performance</h2>
+          <p>What was measured, and how. Details and the commands to reproduce them are in <code>docs/PERFORMANCE.md</code>.</p>
+
+          <h3>Reads from the chain</h3>
+          <p>Measured on the contract in memory with 60 vows (two thirds backed on both sides, one in five with a note), so the sizes are those of the real JSON:</p>
+          <table>
+            <thead><tr><th>Read</th><th>Size</th></tr></thead>
+            <tbody>
+              <tr><td>Version 1 poll: <code>stats</code> plus the first page of <code>list_vows</code>, every 12 seconds</td><td>30,842 bytes</td></tr>
+              <tr><td>Version 2 idle poll: <code>pulse</code>, every 8 seconds</td><td>25 bytes</td></tr>
+              <tr><td>Version 2 poll after one vow changed: <code>changes_since</code></td><td>657 bytes</td></tr>
+              <tr><td>Version 2 full page (only at start, and when the client is too far behind)</td><td>32,794 bytes</td></tr>
+            </tbody>
+          </table>
+          <p>An idle poll no longer grows with the number of vows. <code>tests/direct/test_payloads.py</code> fails if it does.</p>
+
+          <h3>What the browser downloads</h3>
+          <table>
+            <thead><tr><th>Build</th><th>JavaScript, gzipped</th></tr></thead>
+            <tbody>
+              <tr><td>Version 1: one bundle</td><td>177 KB</td></tr>
+              <tr><td>Version 2: the app</td><td>86 KB</td></tr>
+              <tr><td>Version 2: chain SDK, fetched on the first chain read</td><td>101 KB</td></tr>
+              <tr><td>Version 2: 3D engine, fetched only on the space page</td><td>127 KB</td></tr>
+            </tbody>
+          </table>
+          <p>The browser smoke test checks that the SDK is not fetched in rehearsal mode and that the 3D engine is fetched on no page except <code>#/space</code>. Frame times of the sky were not measured, so no figure is claimed for them.</p>
         </section>
 
         <!-- ───────────────────────── Security ───────────────────────── -->
@@ -567,21 +692,45 @@ UNCLEAR  everyone: their own stake or backing, in full</code></pre>
         <section id="testing">
           <h2>Testing</h2>
           <pre><code>pip install -r requirements.txt
+genvm-lint check contracts/lumen.py
 pytest</code></pre>
-          <p>The suite runs the contract in memory with mocked web pages and LLM answers. It covers:</p>
-          <ul>
-            <li>input validation, including the evidence address rules</li>
-            <li>backing rules and the faith cap</li>
-            <li>counter-evidence rules and slot ranking</li>
-            <li>early confirmation</li>
-            <li>a regression test for the self-doubt attack</li>
-            <li>every verdict and payout, and single-use claims</li>
-            <li>the unreadable-page retry path</li>
-            <li>streaks, paging and validator agreement</li>
-          </ul>
-          <p><code>tests/direct/test_economics.py</code> checks the payout math on its own: payouts never exceed the pool, and rounding dust stays at a few wei. <code>test_hardening.py</code> and <code>test_economics.py</code> need no VM.</p>
-          <p><code>tests/direct/test_adversarial.py</code> holds the adversarial and end-to-end tests: manipulated evidence (invented quotes, undated or late work, prompt injection, validators that cannot find the leader's quote), post-deadline edits against firm records, coordinated counter-evidence and slot crowding, and complete stake, review, finalize and claim runs whose <code>deposited</code>, <code>paid</code> and <code>embers</code> totals must balance.</p>
+          <p>The suite runs the contract in memory with mocked web pages and LLM answers.</p>
+          <table>
+            <thead><tr><th>File</th><th>What it covers</th></tr></thead>
+            <tbody>
+              <tr><td><code>test_lumen.py</code></td><td>Input validation, backing rules and the faith cap, counter-evidence and slot ranking, early confirmation, the self-doubt regression, every verdict and payout, single-use claims, the unreadable-page retry path, streaks, paging and validator agreement.</td></tr>
+              <tr><td><code>test_economics.py</code>, <code>test_hardening.py</code></td><td>The payout math on its own and the page and address rules. No VM needed.</td></tr>
+              <tr><td><code>test_adversarial.py</code></td><td>Manipulated evidence (invented quotes, undated or late work, prompt injection, validators that cannot find the leader's quote), post-deadline edits against firm records, coordinated counter-evidence and slot crowding, complete runs whose <code>deposited</code>, <code>paid</code> and <code>embers</code> totals must balance.</td></tr>
+              <tr><td><code>test_v2_features.py</code></td><td>Retraction, progress notes, the activity feed and incremental sync, the keeper directory and tiers, <code>params()</code>.</td></tr>
+              <tr><td><code>test_v2_adversarial.py</code></td><td>Attacks and edge cases on the version 2 features: a retraction that never creates or loses a wei, cannot dodge a verdict somebody bet on and is allowed up to the last second before the deadline; hostile note text; notes from a backer or after review; view arguments at the edge of the integer range; views on an empty contract; failed calls leaving no trace in the feed; many keepers; the solvency invariant with retractions mixed in.</td></tr>
+              <tr><td><code>test_fuzz_invariants.py</code></td><td>Random but seeded sequences of every action, checking after every step that no money is created or lost beyond a few wei of rounding, that every payout equals an independent re-implementation of the rules, that the incremental sync agrees with the full read and that a failed call changes nothing. <code>LUMEN_FUZZ_SEEDS</code>, <code>LUMEN_FUZZ_STEPS</code> and <code>LUMEN_FUZZ_BASE</code> widen the search.</td></tr>
+              <tr><td><code>test_frontend_parity.py</code></td><td>The app's limits, tiers, state numbers, refusal messages and payout preview against the contract.</td></tr>
+              <tr><td><code>test_payloads.py</code></td><td>The read sizes in the Performance section.</td></tr>
+            </tbody>
+          </table>
+          <p>The runner of the live test has its own tests: <code>cd e2e &amp;&amp; npm test</code> for its oracle, report and configuration, and <code>npm run check</code> to rehearse a whole run against the real contract in memory. See the next section.</p>
           <p>The Python test tools are pinned in <code>requirements.txt</code>.</p>
+        </section>
+
+        <section id="live-e2e">
+          <h2>Live end-to-end run</h2>
+          <p>A script in <code>e2e/</code> that plays five scenarios against a contract on Studionet, checks every payout against an independent calculation, and writes a report that can be committed. It is built to run in GitHub Codespaces.</p>
+          <pre><code>cd e2e
+npm install
+npm run live                       # deploys a fresh contract, funds its own accounts, writes a report
+E2E_COMMIT=push npm run live       # the same, then commits and pushes the report</code></pre>
+          <table>
+            <thead><tr><th>Scenario</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>adversarial</code></td><td>29 calls the contract has to refuse, each checked for its reason, then a retraction and its claim.</td></tr>
+              <tr><td><code>kept</code></td><td>A vow whose evidence page shows the work: judge, review window, finalize, claims.</td></tr>
+              <tr><td><code>broken</code></td><td>A vow whose page shows nothing, with counter-evidence and a doubter.</td></tr>
+              <tr><td><code>retract</code></td><td>A keeper withdraws an unbacked vow and claims four fifths.</td></tr>
+              <tr><td><code>directory</code></td><td>Reads every view back and compares it with what the other scenarios did: the activity feed, the incremental sync, keeper profiles and the ledger totals.</td></tr>
+            </tbody>
+          </table>
+          <p>The evidence pages are in <code>evidence/fixtures/</code> and must be pushed to GitHub before a run, because the validators read them from there. The run checks that they can be fetched first. The report goes to <code>evidence/live-e2e/&lt;time&gt;/</code> as Markdown, CSV and JSON; the exit code is 0 when everything held, 1 when a money rule or a contract behavior failed, and 2 when only a language-model verdict differed from the expected one (validators can legitimately differ between runs). A run that cannot start, for example because the fixture pages are not online yet, stops before it spends anything.</p>
+          <p>Because the real network cannot be reached from every place, the runner can rehearse itself: <code>npm run check</code> runs the same scenarios against the real contract in memory, with a virtual clock. The report of such a run says <em>SELF-CHECK</em> at the top and is never a live result. <code>npm run check:mutations</code> breaks the contract in nine ways and fails if the runner does not notice each one. All settings are described in <code>e2e/README.md</code>.</p>
         </section>
 
         <!-- ───────────────────────── Links ───────────────────────── -->

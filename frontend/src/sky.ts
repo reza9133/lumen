@@ -15,6 +15,7 @@ const TONES: Record<number, [number, number, number]> = {
   1: [255, 232, 160],
   2: [190, 78, 52],
   3: [150, 144, 196],
+  5: [168, 170, 184],
 };
 
 export type SkyEvents = {
@@ -32,6 +33,10 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
     p: frac(i * 0.123) * 6.28,
   }));
   let w = 0, h = 0, raf = 0;
+  let bg: HTMLCanvasElement | null = null; // the sky gradient and the moon, drawn once per size instead of once per frame
+  let groups: Lamp[][] = []; // lanterns of one keeper that were kept, in order: the lines between them
+  let paused = false;
+  let frameMs = 0;
   let lamps: Lamp[] = [];
   let sparks: Spark[] = [];
   let drift: Drift[] = [];
@@ -51,7 +56,39 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (lastVows.length) lamps = layout(lastVows, new Map(lamps.map((l) => [l.id, l])));
+    bg = paintBackground(dpr);
+    if (lastVows.length) {
+      lamps = layout(lastVows, new Map(lamps.map((l) => [l.id, l])));
+      groups = keptGroups();
+    }
+    if (paused) draw(performance.now());
+  }
+
+  function paintBackground(dpr: number) {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * dpr));
+    c.height = Math.max(1, Math.round(h * dpr));
+    const g = c.getContext("2d")!;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#060716");
+    sky.addColorStop(0.55, "#17123a");
+    sky.addColorStop(1, "#3a1f3f");
+    g.fillStyle = sky;
+    g.fillRect(0, 0, w, h);
+    const moon = g.createRadialGradient(w * 0.84, h * 0.16, 0, w * 0.84, h * 0.16, Math.min(w, h) * 0.34);
+    moon.addColorStop(0, "rgba(243,233,210,0.55)");
+    moon.addColorStop(0.1, "rgba(243,233,210,0.18)");
+    moon.addColorStop(1, "rgba(243,233,210,0)");
+    g.fillStyle = moon;
+    g.fillRect(0, 0, w, h);
+    return c;
+  }
+
+  function keptGroups() {
+    const byKeeper = new Map<string, Lamp[]>();
+    for (const l of lamps) if (l.state === 1) (byKeeper.get(l.keeper) ?? byKeeper.set(l.keeper, []).get(l.keeper)!).push(l);
+    return [...byKeeper.values()].filter((g) => g.length > 1).map((g) => g.sort((a, b) => a.id - b.id));
   }
 
   function burst(px: number, py: number, kind: number) {
@@ -120,6 +157,7 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
   function setVows(vows: Vow[]) {
     lastVows = vows;
     lamps = layout(vows, new Map(lamps.map((l) => [l.id, l])));
+    groups = keptGroups();
   }
 
   function setAsh(embers: string) {
@@ -141,41 +179,24 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
     (filter === "all" || phaseOf(l.state, l.deadline, clock()) === filter) && (owner === null || l.keeper === owner);
 
   function constellations(t: number) {
-    const byKeeper = new Map<string, Lamp[]>();
-    for (const l of lamps) (byKeeper.get(l.keeper) ?? byKeeper.set(l.keeper, []).get(l.keeper)!).push(l);
     ctx.lineWidth = 1;
-    for (const all of byKeeper.values()) {
-      const group = all.filter((l) => l.state === 1).sort((a, b) => a.id - b.id);
-      if (group.length < 2) continue;
+    ctx.strokeStyle = `rgba(255,226,154,${0.3 + 0.08 * Math.sin(t)})`;
+    ctx.beginPath();
+    for (const group of groups) {
       for (let i = 1; i < group.length; i++) {
-        const a = group[i - 1], b = group[i];
-        if (a.state !== 1 || b.state !== 1) continue;
-        ctx.strokeStyle = `rgba(255,226,154,${0.3 + 0.08 * Math.sin(t)})`;
-        ctx.beginPath();
-        ctx.moveTo(a.x * w, a.y * h);
-        ctx.lineTo(b.x * w, b.y * h);
-        ctx.stroke();
+        ctx.moveTo(group[i - 1].x * w, group[i - 1].y * h);
+        ctx.lineTo(group[i].x * w, group[i].y * h);
       }
     }
+    ctx.stroke();
   }
 
   function draw(now: number) {
+    const started = performance.now();
     const t = (now - t0) / 1000;
     const nowS = clock();
 
-    const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#060716");
-    sky.addColorStop(0.55, "#17123a");
-    sky.addColorStop(1, "#3a1f3f");
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h);
-
-    const moon = ctx.createRadialGradient(w * 0.84, h * 0.16, 0, w * 0.84, h * 0.16, Math.min(w, h) * 0.34);
-    moon.addColorStop(0, "rgba(243,233,210,0.55)");
-    moon.addColorStop(0.1, "rgba(243,233,210,0.18)");
-    moon.addColorStop(1, "rgba(243,233,210,0)");
-    ctx.fillStyle = moon;
-    ctx.fillRect(0, 0, w, h);
+    if (bg) ctx.drawImage(bg, 0, 0, w, h);
 
     for (const s of stars) {
       ctx.globalAlpha = calm ? 0.6 : 0.3 + 0.5 * Math.sin(t * 1.2 + s.p) ** 2;
@@ -298,8 +319,21 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
       ctx.fillRect(d.x * w + Math.sin(t * 0.6 + d.x * 9) * 8, d.y * h, d.s, d.s);
     }
     ctx.globalCompositeOperation = "source-over";
-    raf = requestAnimationFrame(draw);
+    frameMs = frameMs * 0.95 + (performance.now() - started) * 0.05;
+    raf = 0;
+    if (!paused && !document.hidden) raf = requestAnimationFrame(draw);
   }
+
+  // The loop runs only while the sky is visible: not in a hidden tab, and not behind the ledger.
+  function start() {
+    if (raf === 0 && !paused && !document.hidden) raf = requestAnimationFrame(draw);
+  }
+  function stop() {
+    cancelAnimationFrame(raf);
+    raf = 0;
+  }
+  const onVisibility = () => (document.hidden ? stop() : start());
+  document.addEventListener("visibilitychange", onVisibility);
 
   const move = (e: PointerEvent) => {
     const r = canvas.getBoundingClientRect();
@@ -318,7 +352,7 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
   canvas.addEventListener("click", click);
   addEventListener("resize", resize);
   resize();
-  raf = requestAnimationFrame(draw);
+  start();
 
   return {
     setVows,
@@ -327,12 +361,23 @@ export function createSky(canvas: HTMLCanvasElement, ev: SkyEvents) {
     setFilter: (f: Phase | "all") => { filter = f; },
     setOwner: (a: string | null) => { owner = a === null ? null : a.toLowerCase(); },
     setClock: (fn: () => number) => { clock = fn; },
+    setPaused(p: boolean) {
+      if (p === paused) return;
+      paused = p;
+      if (p) {
+        stop();
+        draw(performance.now()); // leave one still frame behind
+      } else start();
+    },
+    // Milliseconds spent drawing one frame (moving average).
+    frameMs: () => frameMs,
     positionOf(id: number) {
       const l = lamps.find((x) => x.id === id);
       return l ? { x: l.x * w, y: l.y * h, r: l.r } : null;
     },
     destroy() {
-      cancelAnimationFrame(raf);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerleave", leave);
       canvas.removeEventListener("click", click);

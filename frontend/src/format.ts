@@ -53,9 +53,9 @@ export const alias = (addr: string) => {
   return `${FIRST[Math.floor(hash01(a, 1) * FIRST.length)]} ${SECOND[Math.floor(hash01(a, 2) * SECOND.length)]}`;
 };
 
-export type Phase = "burning" | "due" | "review" | "kept" | "broken" | "unclear";
+export type Phase = "burning" | "due" | "review" | "kept" | "broken" | "unclear" | "retracted";
 export const phaseOf = (state: number, deadline: number, now: number): Phase =>
-  state === 4 ? "review" : state === 1 ? "kept" : state === 2 ? "broken" : state === 3 ? "unclear" : now >= deadline ? "due" : "burning";
+  state === 4 ? "review" : state === 1 ? "kept" : state === 2 ? "broken" : state === 3 ? "unclear" : state === 5 ? "retracted" : now >= deadline ? "due" : "burning";
 
 export const PHASE_LABEL: Record<Phase, string> = {
   burning: "Burning",
@@ -64,4 +64,35 @@ export const PHASE_LABEL: Record<Phase, string> = {
   kept: "Kept",
   broken: "Broken",
   unclear: "Unclear",
+  retracted: "Retracted",
 };
+
+// What the activity feed calls each thing that can happen to a vow.
+export const ACTION_LABEL: Record<string, string> = {
+  made: "lit a vow",
+  faith: "backed a vow",
+  doubt: "doubted a vow",
+  update: "posted a progress note",
+  pinned: "pinned firm proof",
+  challenged: "added counter-evidence",
+  checked: "checked early",
+  retry: "could not read the evidence",
+  proposed: "had a verdict proposed",
+  disputed: "was disputed",
+  kept: "was kept",
+  broken: "was broken",
+  unclear: "ended unclear",
+  retracted: "was retracted",
+  released: "was released",
+  claimed: "paid out a claim",
+};
+
+const AGO: [number, string][] = [[86400, "d"], [3600, "h"], [60, "m"]];
+// "5m ago", "3h ago", "2d ago".
+export function ago(at: number, now: number): string {
+  const s = Math.max(0, now - at);
+  for (const [n, u] of AGO) if (s >= n) return `${Math.floor(s / n)}${u} ago`;
+  return "just now";
+}
+
+export const dateOf = (secs: number) => new Date(secs * 1000).toLocaleDateString("en", { year: "numeric", month: "short", day: "numeric" });

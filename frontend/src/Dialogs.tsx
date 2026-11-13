@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { parseWei } from "./format";
+import { MAX_TEXT, MIN_STAKE } from "./limits";
 import { EDITABLE_HINT, URL_HINT, cleanText, evidenceKind, isEvidenceUrl, isVowText, normalizeUrl } from "./evidence";
 
 const WINDOWS: [string, number][] = [
@@ -42,7 +43,7 @@ export function LightDialog(p: { onClose: () => void; onSubmit: (text: string, u
       >
         <h2>Make a vow</h2>
         <label>What will you do?
-          <textarea value={text} maxLength={280} rows={3} onChange={(e) => setText(e.target.value)} placeholder="Publish the first chapter of my essay series." autoFocus />
+          <textarea value={text} maxLength={MAX_TEXT} rows={3} onChange={(e) => setText(e.target.value)} placeholder="Publish the first chapter of my essay series." autoFocus />
         </label>
         <label>Where will the proof appear?
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/my-essays" />
@@ -59,10 +60,10 @@ export function LightDialog(p: { onClose: () => void; onSubmit: (text: string, u
             <input value={stake} onChange={(e) => setStake(e.target.value)} inputMode="decimal" />
           </label>
         </div>
-        {stake.trim() !== "" && (wei === null || wei < 10n ** 17n) && (
+        {stake.trim() !== "" && (wei === null || wei < MIN_STAKE) && (
           <p className="meta hint">{wei === null ? "Enter the stake as a number, for example 0.5." : "The minimum stake is 0.1 GEN."}</p>
         )}
-        <p className="meta">If the page shows no proof after the deadline, half of your stake is burned and the other half goes to those who doubted you, together with the faith pool. If nobody doubted you, the whole stake and all faith behind it are burned. The minimum stake is 0.1 GEN.</p>
+        <p className="meta">If the page shows no proof after the deadline, half of your stake is burned and the other half goes to those who doubted you, together with the faith pool. If nobody doubted you, the whole stake and all faith behind it are burned. The minimum stake is 0.1 GEN. If you change your mind before the deadline and nobody has backed the vow yet, you can retract it: a fifth of the stake is burned and the rest is yours to claim.</p>
         <div className="two">
           <button type="submit" disabled={!ready}>Light the lantern</button>
           <button type="button" className="ghost" onClick={p.onClose}>Cancel</button>
@@ -79,7 +80,7 @@ export function AboutDialog(p: { onClose: () => void }) {
       <div className="dialog about" role="dialog" aria-modal="true" aria-label="How Lumen works" onClick={(e) => e.stopPropagation()}>
         <h2>How Lumen works</h2>
         <ol>
-          <li><strong>Make a vow.</strong> Write what you will do, stake GEN, and name the web page that will prove it.</li>
+          <li><strong>Make a vow.</strong> Write what you will do, stake GEN, and name the web page that will prove it. Until the deadline you can post short progress notes, and you can retract the vow while nobody has backed it.</li>
           <li><strong>Others take sides.</strong> Friends back you with faith. Skeptics put GEN on doubt and can add pages that argue the vow failed. Both stay open until the deadline.</li>
           <li><strong>Validators read the page.</strong> After the deadline, each validator reads the evidence and votes. A favourable verdict needs a verbatim quote and a date on or before the deadline, and every validator must find that quote on its own copy of the page. A vow nobody doubts can be confirmed early, once half of the time has passed.</li>
           <li><strong>Review.</strong> A kept or broken verdict is first a proposal. The losing side can submit a page during a review window; archive captures and commit links outweigh editable pages. Then anyone finalizes it.</li>

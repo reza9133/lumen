@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import type { KeeperRecord, Position, Vow } from "./chain";
-import { PHASE_LABEL, alias, gen, left, parseWei, phaseOf, short } from "./format";
+import { useMemo, useState, type ReactNode } from "react";
+import type { Position, Profile, Vow } from "./chain";
+import { PHASE_LABEL, alias, dateOf, gen, left, parseWei, phaseOf, short } from "./format";
+import { MAX_UPDATE, MAX_UPDATES, MIN_UPDATE, RETRACT_BURN_DIV } from "./limits";
+import { href } from "./router";
 import { preview } from "./payout";
 import {
   MAX_PINS, PROVENANCE_LABEL, URL_HINT, canDispute, canFinalize, canJudgeEarly, canRelease, isEvidenceUrl, isPinnable, normalizeUrl,
@@ -12,8 +14,11 @@ type Props = {
   now: number;
   me: string | null;
   pos: Position | null;
-  record: KeeperRecord | null;
-  onClose: () => void;
+  record: Profile | null;
+  variant?: "drawer" | "page";
+  onClose?: () => void;
+  onUpdate: (text: string) => void;
+  onRetract: () => void;
   onBack: (side: "faith" | "doubt", wei: bigint) => void;
   onJudge: () => void;
   onChallenge: (url: string) => void;
@@ -27,11 +32,12 @@ type Props = {
   onConnect: () => void;
 };
 
-export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, onJudge, onChallenge, onPin, onDispute, onFinalize, onClaim, onRelease, onInvalid, onNotice, onConnect }: Props) {
+export default function Drawer({ vow: v, now, me, pos, record, variant = "drawer", onClose, onUpdate, onRetract, onBack, onJudge, onChallenge, onPin, onDispute, onFinalize, onClaim, onRelease, onInvalid, onNotice, onConnect }: Props) {
   const [amount, setAmount] = useState("0.1");
   const [counter, setCounter] = useState("");
   const [pin, setPin] = useState("");
   const [dispute, setDispute] = useState("");
+  const [note, setNote] = useState("");
   const phase = phaseOf(v.state, v.deadline, now);
   const total = BigInt(v.faith) + BigInt(v.doubt);
   const faithPct = total > 0n ? Number((BigInt(v.faith) * 100n) / total) : 50;
@@ -55,7 +61,7 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
   const elapsed = span > 0 ? Math.min(100, Math.max(0, ((now - v.created) / span) * 100)) : 100;
 
   const copyLink = async () => {
-    const link = `${location.origin}${location.pathname}#vow=${v.id}`;
+    const link = `${location.origin}${location.pathname}${href.vow(v.id)}`;
     try {
       await navigator.clipboard.writeText(link);
       onNotice("Link copied.");
@@ -97,6 +103,16 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
     onDispute(normalizeUrl(dispute) ?? dispute.trim());
     setDispute("");
   };
+  const canRetract = mine && v.state === 0 && now < v.deadline && BigInt(v.faith) === 0n && BigInt(v.doubt) === 0n;
+  const doNote = () => {
+    const text = note.trim().replace(/\s+/g, " ");
+    if (Array.from(text).length < MIN_UPDATE) return onInvalid(`A note needs at least ${MIN_UPDATE} characters.`);
+    onUpdate(text);
+    setNote("");
+  };
+  const doRetract = () => {
+    if (window.confirm("Retract this vow? A fifth of the stake is burned and the vow is closed for good.")) onRetract();
+  };
   const challenge = () => {
     if (!isEvidenceUrl(counter)) return onInvalid(URL_HINT);
     onChallenge(normalizeUrl(counter) ?? counter.trim());
@@ -104,19 +120,21 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
   };
 
   return (
-    <aside className="drawer" aria-live="polite">
+    <Wrap variant={variant}>
       <div className="topbtns">
         <button className="close" onClick={copyLink} aria-label="Copy a link to this vow">Copy link</button>
-        <button className="close" onClick={onClose} aria-label="Close details">Close</button>
+        {variant === "drawer" && <a className="close" href={href.vow(v.id)}>Open page</a>}
+        {onClose && <button className="close" onClick={onClose} aria-label="Close details">Close</button>}
       </div>
       <span className={`pill p-${phase}`}>{PHASE_LABEL[phase]}</span>
       <blockquote>{v.text}</blockquote>
 
       <p className="meta">
-        Kept by <strong>{alias(v.keeper)}</strong> <span className="addr">{short(v.keeper)}</span>{mine ? " (you)" : ""}
+        Kept by <a className="keeper-link" href={href.keeper(v.keeper)}><strong>{alias(v.keeper)}</strong></a> <span className="addr">{short(v.keeper)}</span>{mine ? " (you)" : ""}
+        {record && record.tier !== "Unlit" && <span className={`tier t-${record.tier.toLowerCase()}`}>{record.tier}</span>}
       </p>
-      {record && (record.kept > 0 || record.broken > 0) && (
-        <p className="meta">Record: {record.kept} kept ({gen(record.kept_stake)} GEN staked), {record.broken} broken. Current streak {record.streak}, best {record.best}.</p>
+      {record && (record.kept > 0 || record.broken > 0 || record.retracted > 0) && (
+        <p className="meta">Record: {record.kept} kept ({gen(record.kept_stake)} GEN staked), {record.broken} broken{record.retracted > 0 ? `, ${record.retracted} retracted` : ""}. Current streak {record.streak}, best {record.best}.</p>
       )}
       <p className="meta">{phase === "burning" ? left(v.deadline, now) : `Deadline ${new Date(v.deadline * 1000).toLocaleString()}`}</p>
       {phase === "burning" && (
@@ -150,6 +168,17 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
         <p className="meta">Keeper stake {gen(v.stake)} GEN. Room for faith: {gen(faithRoom.toString())} GEN.</p>
       </div>
 
+      {v.updates.length > 0 && (
+        <ol className="notes" aria-label="Progress notes from the keeper">
+          {v.updates.map((u, i) => (
+            <li key={`${u.at}-${i}`}>
+              <time dateTime={new Date(u.at * 1000).toISOString()}>{dateOf(u.at)}</time>
+              <span>{u.text}</span>
+            </li>
+          ))}
+          <li className="aside">Notes are written by the keeper. The validators never read them.</li>
+        </ol>
+      )}
       {v.note && <p className="verdict">{v.note}</p>}
       {v.proof && (
         <div className="proof" aria-label="The proof the verdict rests on">
@@ -210,6 +239,27 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
               </label>
               <button className="ghost" onClick={doPin}>Pin this proof</button>
               <p className="meta">An exact archive.org capture or a commit-pinned link. It must exist before the deadline. Validators read it together with your page. If the archive confirms the capture, firm proof gets a shorter review window and cannot be outweighed by an editable page; a capture it cannot confirm is treated as an editable page.</p>
+            </div>
+          )}
+          {mine && open && now < v.deadline && (
+            <div className="challenge">
+              {v.updates.length < MAX_UPDATES ? (
+                <>
+                  <label>Post a progress note ({v.updates.length}/{MAX_UPDATES})
+                    <input value={note} maxLength={MAX_UPDATE} onChange={(e) => setNote(e.target.value)} placeholder="Second half drafted, review on Friday." />
+                  </label>
+                  <button className="ghost" onClick={doNote}>Post note</button>
+                </>
+              ) : (
+                <p className="meta">All {MAX_UPDATES} progress notes are used.</p>
+              )}
+              {canRetract && (
+                <>
+                  <button className="ghost danger" onClick={doRetract}>Retract this vow</button>
+                  <p className="meta">Nobody has backed or doubted it yet, so you can take it back before the deadline. A fifth of the stake ({gen((BigInt(v.stake) / BigInt(RETRACT_BURN_DIV)).toString())} GEN) is burned, you can claim the rest, and the record shows a retraction.</p>
+                </>
+              )}
+              {!canRetract && <p className="meta">A vow with backing cannot be retracted.</p>}
             </div>
           )}
           {canChallenge && <ChallengeForm value={counter} onChange={setCounter} onSubmit={challenge} />}
@@ -289,7 +339,7 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
         </div>
       )}
 
-      {(phase === "kept" || phase === "broken" || phase === "unclear") && pos && (
+      {(phase === "kept" || phase === "broken" || phase === "unclear" || phase === "retracted") && pos && (
         <div className="act">
           {BigInt(pos.payout) > 0n && !pos.claimed && <button onClick={onClaim}>Claim {gen(pos.payout)} GEN</button>}
           {pos.claimed && <p className="meta">You have claimed your payout.</p>}
@@ -298,7 +348,15 @@ export default function Drawer({ vow: v, now, me, pos, record, onClose, onBack, 
           )}
         </div>
       )}
-    </aside>
+    </Wrap>
+  );
+}
+
+function Wrap({ variant, children }: { variant: "drawer" | "page"; children: ReactNode }) {
+  return variant === "drawer" ? (
+    <aside className="drawer" aria-live="polite">{children}</aside>
+  ) : (
+    <article className="vowpage" aria-live="polite">{children}</article>
   );
 }
 

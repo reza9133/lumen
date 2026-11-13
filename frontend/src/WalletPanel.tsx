@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { readRecord, type KeeperRecord } from "./chain";
+import type { Profile } from "./chain";
+import { useSource } from "./context";
 import { getActiveProvider } from "./eip6963";
 import { alias, gen, short } from "./format";
 import Modal from "./Modal";
@@ -66,7 +67,8 @@ export default function WalletPanel({ wallet }: { wallet: WalletApi }) {
     modalOpen, openModal, closeModal, connect, disconnect, switchAccount, switchNetwork,
   } = wallet;
 
-  const [record, setRecord] = useState<KeeperRecord | null>(null);
+  const source = useSource();
+  const [record, setRecord] = useState<Profile | null>(null);
   const [balance, setBalance] = useState<bigint | null>(null);
 
   // The keeper record and balance are re-read whenever the modal opens, so they are fresh after a
@@ -75,9 +77,9 @@ export default function WalletPanel({ wallet }: { wallet: WalletApi }) {
     setRecord(null);
     if (!address) return undefined;
     let live = true;
-    readRecord(address).then((r) => { if (live) setRecord(r); }).catch(() => {});
+    source.profile(address).then((r) => { if (live) setRecord(r); }).catch(() => {});
     return () => { live = false; };
-  }, [address, modalOpen]);
+  }, [address, modalOpen, source]);
 
   useEffect(() => {
     setBalance(null);

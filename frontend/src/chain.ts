@@ -1,4 +1,3 @@
-import * as sdk from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { getActiveProvider } from "./eip6963";
 
@@ -7,6 +6,7 @@ export const NETWORK_NAME = "studionet";
 
 export const CONTRACT = (import.meta.env.VITE_LUMEN_ADDRESS ?? "") as `0x${string}`;
 
+export type Provenance = "snapshot" | "permalink" | "mutable";
 export type Vow = {
   id: number;
   keeper: string;
@@ -18,50 +18,70 @@ export type Vow = {
   faith: string;
   faith_cap: string; // most faith the vow can take: half of the stake
   doubt: string;
-  state: number; // 0 open, 1 kept, 2 broken, 3 unclear, 4 in review (a verdict is proposed and can be disputed)
+  state: number; // 0 open, 1 kept, 2 broken, 3 unclear, 4 in review (a verdict is proposed), 5 retracted
   tries: number;
   note: string;
   counters: string[]; // pages doubters submitted as counter-evidence
-  provenance: "snapshot" | "permalink" | "mutable"; // how hard the main evidence page is to rewrite
+  provenance: Provenance; // how hard the main evidence page is to rewrite
   pins: string[]; // immutable proof the keeper attached before the deadline
   disputes: string[]; // pages submitted during the review window
   proposed: number; // 1 kept or 2 broken while in review
   proposed_at: number;
   review_end: number;
-  proof: { url: string; tier: "snapshot" | "permalink" | "mutable"; quote: string; date: string; hash: string } | null;
+  proof: { url: string; tier: Provenance; quote: string; date: string; hash: string } | null;
+  updates: { at: number; text: string }[]; // progress notes by the keeper; the judges never see them
 };
-export type Stats = { total: number; kept: number; broken: number; embers: string; deposited: string; paid: string };
+export type Stats = {
+  total: number; kept: number; broken: number; retracted: number; keepers: number;
+  embers: string; deposited: string; paid: string; rev: number; version: string;
+};
 export type Position = { faith: string; doubt: string; payout: string; claimed: boolean; challenged: boolean; disputed: boolean };
-export type KeeperRecord = { kept: number; broken: number; streak: number; best: number; kept_stake: string };
+export type Profile = {
+  address: string; vows: number; kept: number; broken: number; retracted: number;
+  streak: number; best: number; kept_stake: string; tier: string;
+};
+export type FeedEntry = { seq: number; vow: number; action: string; at: number; keeper: string; text: string };
+export type Pulse = { rev: number; total: number };
+export type Changes = { rev: number; reset: boolean; rows: Vow[] };
+export type Params = {
+  version: string; min_stake: string; min_back: string; max_text: number; min_text: number; max_url: number;
+  min_window: number; max_window: number; page_max: number; faith_cap_div: number; max_counters: number; max_pins: number;
+  max_disputes: number; max_updates: number; max_update: number; min_update: number; early_gap: number; retry_gap: number;
+  max_tries: number; release_after: number; review_div: number; review_min: number; review_max: number;
+  retract_burn_div: number; feed_max: number; keepers_max: number;
+  tiers: { name: string; kept: number; kept_stake: string; broken_div: number }[];
+  states: Record<string, number>;
+};
 
-const reader: any = sdk.createClient({ chain: studionet });
+// The SDK is the heaviest part of the app and is not needed to draw the page, so it loads on its own, in parallel.
+// In rehearsal mode (no contract) it is never fetched.
+let sdkPromise: Promise<typeof import("genlayer-js")> | null = null;
+export const loadSdk = () => (sdkPromise ??= import("genlayer-js"));
+let readerPromise: Promise<any> | null = null;
+const getReader = () => (readerPromise ??= loadSdk().then((sdk) => sdk.createClient({ chain: studionet })));
+
+// What this session has read from the chain, shown in the footer so the cost of staying in sync is visible.
+export const metrics = { reads: 0, bytes: 0 };
 
 async function read<T>(functionName: string, args: unknown[]): Promise<T> {
-  const raw = await reader.readContract({ address: CONTRACT, functionName, args });
-  return JSON.parse(String(raw)) as T;
+  const raw = String(await (await getReader()).readContract({ address: CONTRACT, functionName, args }));
+  metrics.reads += 1;
+  metrics.bytes += raw.length;
+  return JSON.parse(raw) as T;
 }
 
-export const PAGE = 60; // the contract serves at most this many vows per call
-
-// Reads the newest `pages` pages of vows. A vow that arrives between two page reads can shift the
-// offsets, so rows are de-duplicated by id.
-export async function readAll(pages = 1) {
-  const offsets = Array.from({ length: Math.max(1, pages) }, (_, i) => i * PAGE);
-  const statsP = read<Stats>("stats", []);
-  const chunksP = Promise.all(offsets.map((o) => read<Vow[]>("list_vows", [o, PAGE])));
-  const [stats, chunks] = await Promise.all([statsP, chunksP]);
-  const seen = new Set<number>();
-  const vows: Vow[] = [];
-  for (const row of chunks.flat()) {
-    if (!seen.has(row.id)) {
-      seen.add(row.id);
-      vows.push(row);
-    }
-  }
-  return { stats, vows };
-}
+export { PAGE_MAX as PAGE } from "./limits";
+export const readStats = () => read<Stats>("stats", []);
+export const readPulse = () => read<Pulse>("pulse", []);
+export const readParams = () => read<Params>("params", []);
+export const readList = (offset: number, limit: number) => read<Vow[]>("list_vows", [offset, limit]);
+export const readVow = (id: number) => read<Vow>("get_vow", [id]);
+export const readChanges = (cursor: number) => read<Changes>("changes_since", [cursor]);
+export const readActivity = (offset: number, limit: number) => read<FeedEntry[]>("activity", [offset, limit]);
+export const readKeepers = (offset: number, limit: number) => read<{ total: number; rows: Profile[] }>("list_keepers", [offset, limit]);
+export const readProfile = (who: string) => read<Profile>("profile_of", [who]);
+export const readVowsOf = (who: string, cursor: number, limit: number) => read<{ rows: Vow[]; next: number }>("vows_of", [who, cursor, limit]);
 export const readPosition = (id: number, who: string) => read<Position>("position_of", [id, who]);
-export const readRecord = (who: string) => read<KeeperRecord>("record_of", [who]);
 
 // Offset between this device's clock and the network's, in seconds. The contract judges deadlines by
 // network time, so a device clock that is minutes off would show the wrong phase or fail a short deadline.
@@ -94,6 +114,7 @@ export async function syncClock() {
 export async function makeWallet(addr: string) {
   const provider = getActiveProvider();
   if (!provider) throw new Error("No wallet is connected.");
+  const sdk = await loadSdk();
   const client: any = sdk.createClient({ chain: studionet, account: addr as `0x${string}`, provider: provider as any });
   await client.connect(NETWORK_NAME);
   return { client, addr };
@@ -140,6 +161,14 @@ const CONTRACT_ERRORS = [
   "You already submitted a dispute.",
   "The dispute slots are held by larger positions.",
   "A verdict is already proposed. Call finalize when the review window ends.",
+  "A vow takes at most five updates.",
+  "A vow that has backing cannot be retracted.",
+  "Only the keeper can post updates.",
+  "Only the keeper can retract a vow.",
+  "Side must be faith or doubt.",
+  "The deadline has passed. A vow can only be retracted before it.",
+  "The deadline has passed. Updates are closed.",
+  "The update is too short.",
 ];
 
 const CLOCK_HINT = [
@@ -205,7 +234,7 @@ export async function send(client: any, functionName: string, args: unknown[], v
       ? await client.waitForDecision(opts)
       : await client.waitForTransactionReceipt({ ...opts, status: "ACCEPTED" });
 
-  const check = (sdk as any).isSuccessful;
+  const check = ((await loadSdk()) as any).isSuccessful;
   const ok = check ? check(receipt) : !String(receipt?.txExecutionResultName ?? "").includes("ERROR");
   if (!ok) throw new Error(explain(receipt));
   return receipt;

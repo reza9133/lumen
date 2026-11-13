@@ -201,7 +201,7 @@ a.card:hover { border-color: rgba(255, 180, 84, 0.55); transform: translateY(-1p
   body { font-size: 15.5px; }
   h2 { font-size: 29px; }
   .lead { font-size: 19px; }
-  .top-links a:not(.gh) { display: none; }
+  .top-links a:not(.gh):not(.onchain) { display: none; }
   .top-links .gh span { display: none; }
   .top-links .gh { padding: 9px; }
   .cards, .cards.two, .flow { grid-template-columns: 1fr; }
@@ -225,3 +225,7 @@ a.card:hover { border-color: rgba(255, 180, 84, 0.55); transform: translateY(-1p
   a, code, .lead, .terms dt { color: #111; }
   pre, .table-wrap, .card, .api, .callout { border-color: #bbb; background: none; }
 }
+
+.gl-mark { display: inline-block; flex: none; width: 22px; height: 22px; background: currentColor; -webkit-mask: url(/genlayer-logo.svg) center / contain no-repeat; mask: url(/genlayer-logo.svg) center / contain no-repeat; }
+.top-links a.onchain { display: inline-flex; align-items: center; gap: 8px; }
+@media (max-width: 720px) { .top-links a.onchain span:last-child { display: none; } }

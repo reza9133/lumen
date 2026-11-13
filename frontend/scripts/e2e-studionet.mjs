@@ -1,3 +1,5 @@
+// The first end-to-end script: one vow through the whole cycle with three accounts you fund yourself. The newer,
+// complete live run (five scenarios, an independent payout check, a committed report) is in /e2e.
 // End-to-end run of Lumen on Studionet. It drives one vow through the whole cycle with three real accounts
 //   make_vow -> back (faith, doubt) -> [pin_evidence] -> deadline -> judge -> review window -> finalize -> claim
 // and writes what happened to evidence/studionet-e2e-<scenario>-<time>.json and .md: every transaction hash and
@@ -180,7 +182,7 @@ async function untilFinal(who, step) {
 
 const reader = sdk.createClient({ chain: studionet });
 const read = async (fn, args) => JSON.parse(String(await reader.readContract({ address: CONTRACT, functionName: fn, args })));
-const STATE = ["OPEN", "KEPT", "BROKEN", "UNCLEAR", "REVIEW"];
+const STATE = ["OPEN", "KEPT", "BROKEN", "UNCLEAR", "REVIEW", "RETRACTED"];
 
 // ---- the same archive check the validators make, run here first so that a bad PIN_URL does not waste a run ----
 

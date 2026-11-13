@@ -8,10 +8,8 @@ const BLOCKED_TLDS = [
   "test", "invalid", "example", "onion", "arpa", "localdomain",
 ];
 const BLOCKED_SUFFIXES = ["nip.io", "sslip.io", "xip.io", "localtest.me", "lvh.me", "traefik.me"];
-// Limits the contract enforces (MAX_TEXT, MIN text length, MAX_URL).
-export const MAX_TEXT = 280;
-export const MIN_TEXT = 8;
-export const MAX_URL = 300;
+import { MAX_PINS, MAX_TEXT, MAX_URL, MIN_TEXT, RELEASE_AFTER } from "./limits.ts";
+export { MAX_PINS, MAX_TEXT, MAX_URL, MIN_TEXT, RELEASE_AFTER };
 const IP_LABELS = /(?:^|\.)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\.|$)/;
 
 // The address as the contract wants it: lower-case scheme, punycode host, default port dropped.
@@ -120,10 +118,8 @@ export function isPinnable(url: string, now: number, deadline: number): boolean 
   }
   return true;
 }
-export const MAX_PINS = 2;
 
 // A vow still open this long after its deadline (or after its review window) can be released: everyone is refunded.
-export const RELEASE_AFTER = 30 * 86400;
 export const canRelease = (v: Pick<Vow, "state" | "deadline"> & { review_end?: number }, now: number): boolean =>
   (v.state === 0 && now >= v.deadline + RELEASE_AFTER) || (v.state === 4 && now >= (v.review_end ?? Infinity) + RELEASE_AFTER);
 
