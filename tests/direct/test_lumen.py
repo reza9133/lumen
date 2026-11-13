@@ -502,7 +502,7 @@ def test_an_unusable_verdict_is_a_model_failure_not_a_ruling(direct_vm, direct_d
 def test_a_terse_page_is_judged_only_on_the_last_attempt(direct_vm, direct_deploy, direct_alice):
     c = deploy(direct_deploy)
     vid = make_vow(c, direct_vm, direct_alice, stake=GEN)
-    mock_page(direct_vm, "<p>Done 2020-01-15.</p>")  # readable, but shorter than MIN_PAGE
+    mock_page(direct_vm, "Done 2020-01-15.")  # readable, but shorter than MIN_PAGE (plain text, so the rendered fallback cannot lengthen it)
     mock_verdict(direct_vm, "FULFILLED", quote="Done 2020-01-15.", date_quote="2020-01-15")
     direct_vm.sender = direct_alice
 

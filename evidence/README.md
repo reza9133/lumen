@@ -1,4 +1,14 @@
-# Studionet end-to-end evidence
+# Evidence
+
+Three kinds of file live here.
+
+| Path | What it is |
+|---|---|
+| `live-e2e/<UTC time>/` | Reports written by the live runner in `e2e/` (`npm run live`): `REPORT.md`, `report.json`, `transactions.csv`. The folder appears when someone runs it against Studionet and commits the result; see `docs/DEPLOYMENT.md`. A report here is always from a real network. A rehearsal (`npm run check`) is labelled `SELF-CHECK` and is never written here. |
+| `fixtures/` | The pages the live run uses as evidence (`kept.md`, `broken.md`, `counter.md`). The validators fetch them from GitHub, so they must be pushed before a run. |
+| `studionet-e2e-*.md` | Two hand-made reports of version 1 of the contract, described below. |
+
+# Version 1 evidence: two hand-run Studionet cycles
 
 Reports of two complete runs of Lumen on Studionet, against one deployment. Both runs were done by hand in GenLayer Studio (every step sent from the Studio interface by the project author, who wrote the reports from the results), not by the `npm run e2e` script. Every transaction hash below can be looked up in the explorer.
 
@@ -24,4 +34,4 @@ Every claim above can be read from the chain. With the contract address, call th
 
 Both runs use ordinary editable pages as evidence (so the proof tier of the kept verdict is `mutable`: the page had to show a dated completion on or before the deadline, and it did). They do not exercise archive pins; the archive authentication is covered by `tests/direct/test_archive.py` and `tests/direct/test_validator_proof.py`.
 
-The script `frontend/scripts/e2e-studionet.mjs` (`npm run e2e`, see the README) automates the same cycle and writes `studionet-e2e-<scenario>-<time>.json` and `.md` here, including the GEN balance of each account before and after its claim. It has not been used for these two reports.
+The script `frontend/scripts/e2e-studionet.mjs` (`npm run e2e`) automates the same cycle for one vow; the complete runner is in `e2e/`. The script writes `studionet-e2e-<scenario>-<time>.json` and `.md` here, including the GEN balance of each account before and after its claim. It has not been used for these two reports.

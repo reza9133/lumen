@@ -1,0 +1,19 @@
+{
+  "name": "lumen-e2e",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Live end-to-end runner for the Lumen contract on Studionet",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "live": "node src/live.mjs",
+    "check": "node src/selfcheck.mjs",
+    "check:mutations": "node src/mutations.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8"
+  }
+}

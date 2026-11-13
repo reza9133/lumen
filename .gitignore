@@ -1,6 +1,10 @@
-node_modules
-dist
 .env
 .env.local
-__pycache__
+.pytest_cache
 .venv
+__pycache__
+artifacts/
+dist
+e2e/.accounts.json
+e2e/node_modules
+node_modules

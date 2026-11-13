@@ -12,8 +12,11 @@ try:
 except Exception:  # the proof fingerprint is a convenience; judging must not depend on it
     hashlib = None
 
+VERSION = "2.0.0"
+
 # Vow states. REVIEW is a proposed verdict that can still be disputed; nothing is payable until it is final.
-OPEN, KEPT, BROKEN, UNCLEAR, REVIEW = 0, 1, 2, 3, 4
+# RETRACTED is a vow its keeper withdrew before anyone backed it (final, the keeper claims 80% of the stake).
+OPEN, KEPT, BROKEN, UNCLEAR, REVIEW, RETRACTED = 0, 1, 2, 3, 4, 5
 
 MIN_STAKE = 10**17  # 0.1 GEN
 MIN_BACK = 10**16  # 0.01 GEN
@@ -36,6 +39,22 @@ MAX_RAW = 300_000  # characters of a fetched page that are looked at before any 
 RELEASE_AFTER = 30 * 86400  # a vow still open this long after its deadline can be released (refund)
 MAX_PINS = 2  # immutable proofs (snapshots, permanent links) a keeper can attach before the deadline
 MAX_DISPUTES = 3  # pages the losing side can submit during a review window
+RETRACT_BURN_DIV = 5  # a retracted vow burns stake // 5 (20%); the keeper can claim the rest
+MAX_UPDATES = 5  # progress notes a keeper can post on one vow
+MAX_UPDATE = 200  # characters in one progress note
+MIN_UPDATE = 4
+FEED_MAX = 100  # activity entries served per call
+CHANGES_MAX = PAGE_MAX  # a change feed that touched more vows than this tells the client to reload instead
+KEEPERS_MAX = 100  # keeper rows served per call
+SCAN_MAX = 1500  # vows looked at per vows_of call (the call returns a cursor to continue from)
+# Keeper tiers: (name, min kept vows, min kept stake in wei, max broken per kept vow as a divisor: broken * div <= kept).
+# The stake requirement makes a pile of dust-sized vows worth nothing on its own.
+TIERS = (
+    ("Constellation", 15, 20 * 10**18, 10),
+    ("Beacon", 7, 5 * 10**18, 4),
+    ("Flame", 3, 10**18, 0),
+    ("Spark", 1, 0, 0),
+)
 MIN_QUOTE = 12  # a proof quote shorter than this proves nothing
 MAX_QUOTE = 240
 REVIEW_DIV = 8  # review window = a share of the vow's lifetime ...
@@ -102,14 +121,18 @@ class Vow:
     proposed_at: u64
     review_end: u64
     proof: str  # JSON: the page, quote and date a KEPT verdict rests on
+    updates: str  # one "<unix time>|<note>" per line: progress notes by the keeper (never shown to the judges)
 
 
 def _now() -> int:
     return int(datetime.now(timezone.utc).timestamp())
 
 
-def _clean(s: str, limit: int) -> str:
-    out = "".join(ch if ch.isprintable() else " " for ch in s)
+def _clean(s: str, limit: int, keep_zwnj: bool = False) -> str:
+    """Printable text on one line, without angle brackets. `keep_zwnj` keeps U+200C (zero-width non-joiner), which
+    is an ordinary part of words in Persian and several other scripts; it is only kept for text people write
+    (vows, progress notes). Page text and quotes are compared with it turned into a space on both sides."""
+    out = "".join(ch if (ch.isprintable() or (keep_zwnj and ch == "\u200c")) else " " for ch in s)
     out = out.replace("<", "(").replace(">", ")")
     return " ".join(out.split())[:limit]
 
@@ -448,6 +471,8 @@ def _owed(state: int, is_keeper: bool, f: int, d: int, stake: int, faith: int, d
              pool go to doubters pro-rata, on top of their own backing. With no
              doubters everything is burned.
     unclear  every wei is refunded.
+    retracted the keeper gets the stake back minus one fifth, which is burned. A vow can only be retracted while
+             nobody has backed it, so nobody else has anything on it.
 
     Sybil note: a keeper who doubts their own vow from a second address ends up with
     faith - stake // 2 (their own side of the burn). Faith is capped at stake // 2 in
@@ -455,6 +480,8 @@ def _owed(state: int, is_keeper: bool, f: int, d: int, stake: int, faith: int, d
     """
     if state == UNCLEAR:
         return f + d + (stake if is_keeper else 0)
+    if state == RETRACTED:
+        return stake - stake // RETRACT_BURN_DIV if is_keeper else 0
     if state == KEPT:
         out = stake if is_keeper else 0
         if faith > 0:
@@ -469,9 +496,19 @@ def _owed(state: int, is_keeper: bool, f: int, d: int, stake: int, faith: int, d
 
 
 def _burned(state: int, stake: int, faith: int, doubt: int) -> int:
+    if state == RETRACTED:
+        return stake // RETRACT_BURN_DIV
     if state != BROKEN:
         return 0
     return stake // 2 if doubt > 0 else stake + faith
+
+
+def _standing(kept: int, broken: int, kept_stake: int) -> str:
+    """The keeper's standing, from the record alone. Every tier needs a minimum of GEN staked on kept vows."""
+    for name, need_kept, need_stake, div in TIERS:
+        if kept >= need_kept and kept_stake >= need_stake and (div == 0 or broken * div <= kept):
+            return name
+    return "Unlit"
 
 
 def _prompt(text: str, deadline_iso: str, sources: list, early: bool) -> str:
@@ -525,6 +562,70 @@ def _ask(prompt: str) -> dict:
     return res
 
 
+def _judge_once(text: str, sources: list, deadline: int, counters: list, early: bool, min_page: int, now: int):
+    """One full reading by one node: fetch every page, ask the judge, verify the answer against the pages.
+    Returns (result, pages, tiers). `pages` maps each url that was read to its text and `tiers` to the provenance
+    this node itself authenticated for it, so a validator can check the leader's proof against its own copy."""
+    iso = datetime.fromtimestamp(deadline, timezone.utc).isoformat()
+    pages = {}
+    tiers = {}  # url -> the provenance this node itself authenticated for it
+    live = []
+    for i, url in enumerate(sources):
+        body, served = _read_source(url)
+        if i == 0 and len(body) < min_page:
+            return {"verdict": "UNREADABLE", "note": "The evidence page could not be read.", "proof": None}, pages, tiers
+        if i > 0 and len(body) < MIN_COUNTER:
+            continue
+        pages[url] = body
+        tiers[url] = _tier(url, deadline, now, served)
+        live.append((url, tiers[url], body))
+    res = _ask(_prompt(text, iso, live, early))
+    verdict = str(res.get("verdict", "")).upper().strip()
+    if verdict not in ("FULFILLED", "BROKEN", "UNCLEAR"):
+        raise gl.vm.UserError("[LLM_ERROR] the judge did not return a usable verdict")
+    note = _clean(str(res.get("note", "")), 160)
+    proof = None
+    if verdict == "FULFILLED":
+        proof, why = _verify(res, live, deadline)
+        if proof is None:
+            verdict, note = "BROKEN", why
+    if proof is not None and counters:
+        lowered = _check_counters(text, proof, counters, now)
+        if lowered is not None:
+            verdict, note = lowered
+            proof = None
+    return {"verdict": verdict, "note": note, "proof": proof}, pages, tiers
+
+
+def _agrees(theirs: dict, mine: dict, pages: dict, tiers: dict) -> bool:
+    """Does a validator's own reading (`mine`, with its `pages` and `tiers`) back the leader's result (`theirs`)?
+    Only the verdict has to match. A kept verdict also needs the leader's quote on this validator's own copy of the
+    page it cites, and the same proof tier, so a leader cannot hand a page a firmer standing than the archive gave
+    it. For a snapshot the date is the authenticated capture day, so it is checked as well."""
+    if theirs.get("verdict") != mine["verdict"]:
+        return False
+    if theirs["verdict"] != "FULFILLED":
+        return True
+    proof = theirs.get("proof") or {}
+    if not isinstance(proof, dict):
+        return False
+    url = proof.get("url")
+    if not isinstance(url, str):
+        return False
+    body = pages.get(url)
+    quote = _norm(proof.get("quote", ""))
+    if body is None or len(quote) < MIN_QUOTE or quote not in _norm(body):
+        return False
+    tier = tiers.get(url)
+    if proof.get("tier") != tier:
+        return False
+    if tier == "snapshot":
+        day = datetime.fromtimestamp(_snapshot_ts(url), timezone.utc).strftime("%Y-%m-%d")
+        if proof.get("date") != day:
+            return False
+    return True
+
+
 def _adjudicate(text: str, sources: list, deadline: int, counters: list, early: bool, min_page: int, now: int) -> dict:
     """Every validator reads the evidence itself and judges the vow.
 
@@ -533,72 +634,15 @@ def _adjudicate(text: str, sources: list, deadline: int, counters: list, early: 
     deadline; validators check that quote against their own copy of the page. Counter pages can only lower a
     verdict, and what they can lower it to depends on how hard they are to rewrite (see _check_counters).
     Unreadable counter pages and pins are skipped, so they never turn a readable page into UNREADABLE."""
-    iso = datetime.fromtimestamp(deadline, timezone.utc).isoformat()
-
-    def run():
-        pages = {}
-        tiers = {}  # url -> the provenance this node itself authenticated for it
-        live = []
-        for i, url in enumerate(sources):
-            body, served = _read_source(url)
-            if i == 0 and len(body) < min_page:
-                return {"verdict": "UNREADABLE", "note": "The evidence page could not be read.", "proof": None}, pages, tiers
-            if i > 0 and len(body) < MIN_COUNTER:
-                continue
-            pages[url] = body
-            tiers[url] = _tier(url, deadline, now, served)
-            live.append((url, tiers[url], body))
-        res = _ask(_prompt(text, iso, live, early))
-        verdict = str(res.get("verdict", "")).upper().strip()
-        if verdict not in ("FULFILLED", "BROKEN", "UNCLEAR"):
-            raise gl.vm.UserError("[LLM_ERROR] the judge did not return a usable verdict")
-        note = _clean(str(res.get("note", "")), 160)
-        proof = None
-        if verdict == "FULFILLED":
-            proof, why = _verify(res, live, deadline)
-            if proof is None:
-                verdict, note = "BROKEN", why
-        if proof is not None and counters:
-            lowered = _check_counters(text, proof, counters, now)
-            if lowered is not None:
-                verdict, note = lowered
-                proof = None
-        return {"verdict": verdict, "note": note, "proof": proof}, pages, tiers
 
     def leader_fn():
-        return run()[0]
+        return _judge_once(text, sources, deadline, counters, early, min_page, now)[0]
 
     def validator_fn(leaders_res: gl.vm.Result) -> bool:
         if not isinstance(leaders_res, gl.vm.Return):
             return False
-        mine, pages, tiers = run()
-        theirs = leaders_res.calldata
-        if theirs.get("verdict") != mine["verdict"]:
-            return False
-        if theirs["verdict"] == "FULFILLED":
-            proof = theirs.get("proof") or {}
-            if not isinstance(proof, dict):
-                return False
-            url = proof.get("url")
-            if not isinstance(url, str):
-                return False
-            # The leader's quote must be on this validator's own copy of the page it cites.
-            body = pages.get(url)
-            quote = _norm(proof.get("quote", ""))
-            if body is None or len(quote) < MIN_QUOTE or quote not in _norm(body):
-                return False
-            # How firm that page is must be what this validator authenticated too. The tier is stored with the
-            # verdict and sets the review window, so a leader cannot hand a page a stronger standing than the
-            # archive gave it. For a snapshot the date is the authenticated capture day, so it is checked as well.
-            tier = tiers.get(url)
-            if proof.get("tier") != tier:
-                return False
-            if tier == "snapshot":
-                day = datetime.fromtimestamp(_snapshot_ts(url), timezone.utc).strftime("%Y-%m-%d")
-                if proof.get("date") != day:
-                    return False
-            return True
-        return True
+        mine, pages, tiers = _judge_once(text, sources, deadline, counters, early, min_page, now)
+        return _agrees(leaders_res.calldata, mine, pages, tiers)
 
     return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
@@ -615,11 +659,16 @@ class Lumen(gl.Contract):
     kept_stake_of: TreeMap[str, u256]
     challenged: TreeMap[str, bool]
     disputed: TreeMap[str, bool]
+    made_by: TreeMap[str, u32]  # vows made, per keeper
+    retracted_by: TreeMap[str, u32]
+    keepers: DynArray[str]  # every address that ever made a vow, in the order of their first vow
+    feed: DynArray[str]  # "<vow id>|<action>|<unix time>", one entry per state change, oldest first
     embers: u256
     deposited: u256  # every wei ever paid in (stakes and backing)
     paid: u256  # every wei ever paid out by claim()
     n_kept: u32
     n_broken: u32
+    n_retracted: u32
 
     def __init__(self):
         pass
@@ -628,7 +677,7 @@ class Lumen(gl.Contract):
 
     @gl.public.write.payable
     def make_vow(self, text: str, evidence_url: str, deadline: int) -> None:
-        text = _clean(text, MAX_TEXT)
+        text = _clean(text, MAX_TEXT, True)
         url = evidence_url.strip()
         if len(text) < 8:
             raise gl.vm.UserError("The vow is too short.")
@@ -641,6 +690,11 @@ class Lumen(gl.Contract):
         if stake < MIN_STAKE:
             raise gl.vm.UserError("The minimum stake is 0.1 GEN.")
         self.deposited = u256(int(self.deposited) + stake)
+        who = gl.message.sender_address.as_hex
+        if int(self.made_by.get(who, u32(0))) == 0:
+            self.keepers.append(who)
+        self.made_by[who] = u32(int(self.made_by.get(who, u32(0))) + 1)
+        self._log(len(self.vows), "made")
         self.vows.append(
             Vow(
                 keeper=gl.message.sender_address,
@@ -662,6 +716,7 @@ class Lumen(gl.Contract):
                 proposed_at=u64(0),
                 review_end=u64(0),
                 proof="",
+                updates="",
             )
         )
 
@@ -696,6 +751,7 @@ class Lumen(gl.Contract):
         else:
             raise gl.vm.UserError("Side must be faith or doubt.")
         self.deposited = u256(int(self.deposited) + amount)
+        self._log(vow_id, side)
 
     @gl.public.write
     def pin_evidence(self, vow_id: int, url: str) -> None:
@@ -724,6 +780,7 @@ class Lumen(gl.Contract):
             raise gl.vm.UserError("A vow takes at most two pins.")
         pins.append(url)
         v.pins = "\n".join(pins)
+        self._log(vow_id, "pinned")
 
     @gl.public.write
     def challenge(self, vow_id: int, url: str) -> None:
@@ -747,6 +804,7 @@ class Lumen(gl.Contract):
             lambda a: int(self.doubt_of.get(f"{vow_id}|{a}", u256(0))),
             "The counter-evidence slots are held by larger doubters.",
         )
+        self._log(vow_id, "challenged")
 
     @gl.public.write
     def dispute(self, vow_id: int, url: str) -> None:
@@ -778,6 +836,53 @@ class Lumen(gl.Contract):
             _entries(str(v.disputes)), who.as_hex, url, mine, MAX_DISPUTES, self.disputed, str(vow_id), weight,
             "The dispute slots are held by larger positions.",
         )
+        self._log(vow_id, "disputed")
+
+    @gl.public.write
+    def post_update(self, vow_id: int, text: str) -> None:
+        """The keeper posts a short progress note before the deadline (at most MAX_UPDATES per vow). Notes are public
+        and timestamped, and they are never shown to the judges: only the evidence pages decide a vow."""
+        v = self._vow(vow_id)
+        if int(v.state) != OPEN:
+            raise gl.vm.UserError("This vow has already been judged.")
+        now = _now()
+        if now >= int(v.deadline):
+            raise gl.vm.UserError("The deadline has passed. Updates are closed.")
+        if gl.message.sender_address != v.keeper:
+            raise gl.vm.UserError("Only the keeper can post updates.")
+        note = _clean(text, MAX_UPDATE, True)
+        if len(note) < MIN_UPDATE:
+            raise gl.vm.UserError("The update is too short.")
+        lines = _lines(str(v.updates))
+        if len(lines) >= MAX_UPDATES:
+            raise gl.vm.UserError("A vow takes at most five updates.")
+        lines.append(f"{now}|{note}")
+        v.updates = "\n".join(lines)
+        self._log(vow_id, "update")
+
+    @gl.public.write
+    def retract(self, vow_id: int) -> None:
+        """The keeper withdraws a vow that nobody has backed, before its deadline (a typo in the link, a changed
+        plan). One fifth of the stake is burned, the rest is claimable, the keeper's streak ends and the record
+        shows a retraction. A vow with any backing cannot be retracted, so nobody else can be left holding it,
+        and a retraction can never be used to dodge a verdict that someone bet on."""
+        v = self._vow(vow_id)
+        if int(v.state) != OPEN:
+            raise gl.vm.UserError("This vow has already been judged.")
+        if _now() >= int(v.deadline):
+            raise gl.vm.UserError("The deadline has passed. A vow can only be retracted before it.")
+        if gl.message.sender_address != v.keeper:
+            raise gl.vm.UserError("Only the keeper can retract a vow.")
+        if int(v.faith) > 0 or int(v.doubt) > 0:
+            raise gl.vm.UserError("A vow that has backing cannot be retracted.")
+        keeper = v.keeper.as_hex
+        v.state = u8(RETRACTED)
+        v.note = "The keeper retracted this vow before anyone backed it."
+        self.embers = u256(int(self.embers) + _burned(RETRACTED, int(v.stake), 0, 0))
+        self.n_retracted = u32(int(self.n_retracted) + 1)
+        self.retracted_by[keeper] = u32(int(self.retracted_by.get(keeper, u32(0))) + 1)
+        self.streak_of[keeper] = u32(0)
+        self._log(vow_id, "retracted")
 
     @gl.public.write
     def judge(self, vow_id: int) -> None:
@@ -815,6 +920,7 @@ class Lumen(gl.Contract):
             # Not a verdict: remember the check, leave the vow open and do not count a try.
             v.last_try = u64(now)
             v.note = "Checked early: " + (result["note"] or "the evidence does not show the vow fulfilled yet.")
+            self._log(vow_id, "checked")
             return
 
         if verdict == "UNREADABLE":
@@ -822,13 +928,14 @@ class Lumen(gl.Contract):
             v.last_try = u64(now)
             if int(v.tries) < MAX_TRIES:
                 v.note = result["note"] + " Judging can be requested again in about an hour."
+                self._log(vow_id, "retry")
                 return
             verdict = "BROKEN"
             result["note"] = "The evidence page stayed unreadable after three attempts."
 
         v.note = result["note"]
         if verdict == "UNCLEAR":
-            self._settle(v, UNCLEAR)
+            self._settle(vow_id, v, UNCLEAR)
             return
         proof = result.get("proof")
         v.proposed = u8(KEPT if verdict == "FULFILLED" else BROKEN)
@@ -836,6 +943,7 @@ class Lumen(gl.Contract):
         v.review_end = u64(now + self._window(v, proof))
         v.proof = json.dumps(proof) if proof else ""
         v.state = u8(REVIEW)
+        self._log(vow_id, "proposed")
 
     @gl.public.write
     def finalize(self, vow_id: int) -> None:
@@ -850,7 +958,7 @@ class Lumen(gl.Contract):
         proposed = int(v.proposed)
         pages = [u for _, u in _entries(str(v.disputes))]
         if not pages:
-            self._settle(v, proposed)
+            self._settle(vow_id, v, proposed)
             return
         sources = [str(v.evidence_url)] + _lines(str(v.pins))
         counters = [u for _, u in _entries(str(v.counters))]
@@ -864,14 +972,14 @@ class Lumen(gl.Contract):
             # The keeper's page is gone while it is being challenged. A kept verdict cannot stand on it.
             if proposed == KEPT:
                 v.note = "The evidence page could not be read during the dispute, so everyone is refunded."
-                self._settle(v, UNCLEAR)
+                self._settle(vow_id, v, UNCLEAR)
             else:
-                self._settle(v, BROKEN)
+                self._settle(vow_id, v, BROKEN)
             return
         v.note = result["note"]
         proof = result.get("proof")
         v.proof = json.dumps(proof) if proof else ""
-        self._settle(v, {"FULFILLED": KEPT, "BROKEN": BROKEN}.get(verdict, UNCLEAR))
+        self._settle(vow_id, v, {"FULFILLED": KEPT, "BROKEN": BROKEN}.get(verdict, UNCLEAR))
 
     @gl.public.write
     def release(self, vow_id: int) -> None:
@@ -887,6 +995,7 @@ class Lumen(gl.Contract):
             raise gl.vm.UserError("A vow can be released thirty days after its deadline.")
         v.state = u8(UNCLEAR)
         v.note = "No verdict was reached within thirty days, so everyone is refunded."
+        self._log(vow_id, "released")
 
     @gl.public.write
     def claim(self, vow_id: int) -> None:
@@ -902,6 +1011,7 @@ class Lumen(gl.Contract):
             raise gl.vm.UserError("Nothing to claim for this address.")
         self.claimed[key] = True
         self.paid = u256(int(self.paid) + amount)
+        self._log(vow_id, "claimed")
         _pay(who, amount)
 
     # ---- views ------------------------------------------------------------
@@ -913,11 +1023,132 @@ class Lumen(gl.Contract):
                 "total": len(self.vows),
                 "kept": int(self.n_kept),
                 "broken": int(self.n_broken),
+                "retracted": int(self.n_retracted),
+                "keepers": len(self.keepers),
                 "embers": str(int(self.embers)),
                 "deposited": str(int(self.deposited)),
                 "paid": str(int(self.paid)),
+                "rev": len(self.feed),
+                "version": VERSION,
             }
         )
+
+    @gl.public.view
+    def pulse(self) -> str:
+        """The cheapest possible poll: how many state changes the contract has seen. A client that remembers the
+        number it last saw only has to read more when this one grows (see changes_since)."""
+        return json.dumps({"rev": len(self.feed), "total": len(self.vows)})
+
+    @gl.public.view
+    def params(self) -> str:
+        """Every limit the contract enforces, so clients and test scripts do not have to copy the numbers."""
+        return json.dumps(
+            {
+                "version": VERSION,
+                "min_stake": str(MIN_STAKE),
+                "min_back": str(MIN_BACK),
+                "max_text": MAX_TEXT,
+                "min_text": 8,
+                "max_url": MAX_URL,
+                "min_window": MIN_WINDOW,
+                "max_window": MAX_WINDOW,
+                "page_max": PAGE_MAX,
+                "faith_cap_div": FAITH_CAP_DIV,
+                "max_counters": MAX_COUNTERS,
+                "max_pins": MAX_PINS,
+                "max_disputes": MAX_DISPUTES,
+                "max_updates": MAX_UPDATES,
+                "max_update": MAX_UPDATE,
+                "min_update": MIN_UPDATE,
+                "early_gap": EARLY_GAP,
+                "retry_gap": RETRY_GAP,
+                "max_tries": MAX_TRIES,
+                "release_after": RELEASE_AFTER,
+                "review_div": REVIEW_DIV,
+                "review_min": REVIEW_MIN,
+                "review_max": REVIEW_MAX,
+                "retract_burn_div": RETRACT_BURN_DIV,
+                "feed_max": FEED_MAX,
+                "keepers_max": KEEPERS_MAX,
+                "tiers": [
+                    {"name": n, "kept": k, "kept_stake": str(st), "broken_div": d} for n, k, st, d in TIERS
+                ],
+                "states": {"open": OPEN, "kept": KEPT, "broken": BROKEN, "unclear": UNCLEAR, "review": REVIEW, "retracted": RETRACTED},
+            }
+        )
+
+    @gl.public.view
+    def changes_since(self, cursor: int) -> str:
+        """Incremental sync. `cursor` is the `rev` a client saw last (0 for a first read). Returns the vows that changed
+        since, newest first, and the new cursor. When more vows changed than a page holds, or the cursor is from a
+        different contract, `reset` is true and no rows are sent: the client then reads the newest pages again."""
+        n = len(self.feed)
+        if cursor < 0 or cursor > n:
+            return json.dumps({"rev": n, "reset": True, "rows": []})
+        ids = []
+        seen = set()
+        i = n - 1
+        while i >= cursor:
+            vid = int(str(self.feed[i]).split("|", 1)[0])
+            if vid not in seen:
+                seen.add(vid)
+                ids.append(vid)
+                if len(ids) > CHANGES_MAX:
+                    return json.dumps({"rev": n, "reset": True, "rows": []})
+            i -= 1
+        return json.dumps({"rev": n, "reset": False, "rows": [self._row(vid) for vid in ids]})
+
+    @gl.public.view
+    def activity(self, offset: int, limit: int) -> str:
+        """The newest state changes across all vows, newest first: what happened, to which vow, and when."""
+        limit = max(0, min(limit, FEED_MAX))
+        out = []
+        i = len(self.feed) - 1 - max(0, offset)
+        while i >= 0 and len(out) < limit:
+            vid, action, at = str(self.feed[i]).split("|")
+            v = self.vows[int(vid)]
+            out.append(
+                {
+                    "seq": i,
+                    "vow": int(vid),
+                    "action": action,
+                    "at": int(at),
+                    "keeper": v.keeper.as_hex,
+                    "text": str(v.text)[:100],
+                }
+            )
+            i -= 1
+        return json.dumps(out)
+
+    @gl.public.view
+    def list_keepers(self, offset: int, limit: int) -> str:
+        """Every keeper with their record, in the order of their first vow."""
+        limit = max(0, min(limit, KEEPERS_MAX))
+        start = max(0, offset)
+        rows = [self._profile(str(self.keepers[i])) for i in range(start, min(len(self.keepers), start + limit))]
+        return json.dumps({"total": len(self.keepers), "rows": rows})
+
+    @gl.public.view
+    def profile_of(self, who: str) -> str:
+        return json.dumps(self._profile(Address(who).as_hex))
+
+    @gl.public.view
+    def vows_of(self, who: str, cursor: int, limit: int) -> str:
+        """The vows of one keeper, newest first. Looks at most SCAN_MAX vows per call and returns `next`, the index to
+        continue from (-1 when there is nothing older). Start with cursor -1."""
+        key = Address(who).as_hex
+        limit = max(0, min(limit, PAGE_MAX))
+        out = []
+        if int(self.made_by.get(key, u32(0))) > 0:
+            i = len(self.vows) - 1 if cursor < 0 else min(cursor, len(self.vows) - 1)
+            scanned = 0
+            while i >= 0 and len(out) < limit and scanned < SCAN_MAX:
+                if self.vows[i].keeper.as_hex == key:
+                    out.append(self._row(i))
+                i -= 1
+                scanned += 1
+            return json.dumps({"rows": out, "next": i if i >= 0 else -1})
+        return json.dumps({"rows": out, "next": -1})
 
     @gl.public.view
     def get_vow(self, vow_id: int) -> str:
@@ -965,6 +1196,25 @@ class Lumen(gl.Contract):
 
     # ---- internals --------------------------------------------------------
 
+    def _log(self, vow_id: int, action: str) -> None:
+        self.feed.append(f"{vow_id}|{action}|{_now()}")
+
+    def _profile(self, key: str) -> dict:
+        kept = int(self.kept_by.get(key, u32(0)))
+        broken = int(self.broken_by.get(key, u32(0)))
+        stake = int(self.kept_stake_of.get(key, u256(0)))
+        return {
+            "address": key,
+            "vows": int(self.made_by.get(key, u32(0))),
+            "kept": kept,
+            "broken": broken,
+            "retracted": int(self.retracted_by.get(key, u32(0))),
+            "streak": int(self.streak_of.get(key, u32(0))),
+            "best": int(self.best_of.get(key, u32(0))),
+            "kept_stake": str(stake),
+            "tier": _standing(kept, broken, stake),
+        }
+
     def _vow(self, vow_id: int) -> Vow:
         if vow_id < 0 or vow_id >= len(self.vows):
             raise gl.vm.UserError("No such vow.")
@@ -1003,8 +1253,9 @@ class Lumen(gl.Contract):
         firm = proof is not None and proof.get("tier") != "mutable"
         return base if firm else base * 2
 
-    def _settle(self, v: Vow, code: int) -> None:
+    def _settle(self, vow_id: int, v: Vow, code: int) -> None:
         v.state = u8(code)
+        self._log(vow_id, {KEPT: "kept", BROKEN: "broken"}.get(code, "unclear"))
         keeper = v.keeper.as_hex
         if code == KEPT:
             self.n_kept = u32(int(self.n_kept) + 1)
@@ -1046,6 +1297,7 @@ class Lumen(gl.Contract):
             "proposed_at": int(v.proposed_at),
             "review_end": int(v.review_end),
             "proof": json.loads(proof) if proof else None,
+            "updates": [{"at": int(a), "text": t} for a, _, t in (x.partition("|") for x in _lines(str(v.updates)))],
         }
 
     def _payout(self, vow_id: int, who: Address) -> int:

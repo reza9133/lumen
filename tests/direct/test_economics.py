@@ -12,8 +12,11 @@ OPEN, KEPT, BROKEN, UNCLEAR = 0, 1, 2, 3
 
 def load_helpers():
     src = (Path(__file__).resolve().parents[2] / "contracts" / "lumen.py").read_text()
-    start, end = src.index("def _owed"), src.index("def _adjudicate")
-    ns = {"OPEN": OPEN, "KEPT": KEPT, "BROKEN": BROKEN, "UNCLEAR": UNCLEAR}
+    consts = src[src.index("OPEN, KEPT, BROKEN, UNCLEAR, REVIEW, RETRACTED"):src.index("_BLOCKED_TLDS")]
+    consts = consts[: consts.index("# A public web address")] if "# A public web address" in consts else consts
+    start, end = src.index("def _owed"), src.index("def _judge_once")
+    ns = {}
+    exec(consts, ns)
     exec(src[start:end], ns)
     return ns["_owed"], ns["_burned"]
 

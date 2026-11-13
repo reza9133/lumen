@@ -5,6 +5,50 @@ import re
 import time
 from datetime import datetime, timezone
 
+# Harness compatibility. In genlayer-test 0.29.x the first mock whose pattern matches wins, so a test that
+# registers a second answer for the same pattern would silently keep getting the first one. The suite is
+# written for "the latest mock wins", so registering a pattern again replaces the earlier registration.
+try:
+    from gltest.direct.vm import VMContext as _VMContext
+
+    _orig_mock_llm = _VMContext.mock_llm
+    _orig_mock_web = _VMContext.mock_web
+
+    def _mock_llm_latest(self, prompt_pattern, response):
+        self._llm_mocks[:] = [(p, r) for p, r in self._llm_mocks if p.pattern != prompt_pattern]
+        _orig_mock_llm(self, prompt_pattern, response)
+
+    def _mock_web_latest(self, url_pattern, response):
+        method = response.get("method", "GET")
+        self._web_mocks[:] = [(p, r) for p, r in self._web_mocks if not (p.pattern == url_pattern and r.get("method", "GET") == method)]
+        _orig_mock_web(self, url_pattern, response)
+
+    _VMContext.mock_llm = _mock_llm_latest
+    _VMContext.mock_web = _mock_web_latest
+except Exception:  # a harness without these internals keeps its own behaviour
+    pass
+
+# The same harness drops the "headers" of a flat web mock. Archive authentication reads Memento-Datetime and
+# Location, so the mock has to hand them to the contract.
+try:
+    from gltest.direct import wasi_mock as _wasi_mock
+
+    _orig_web_request = _wasi_mock._handle_web_request
+
+    def _web_request_with_headers(vm, data):
+        out = _orig_web_request(vm, data)
+        try:
+            mock = vm._match_web_mock(data.get("url", ""), data.get("method", "GET"))
+            if mock and "response" not in mock and mock.get("headers"):
+                out["ok"]["response"]["headers"] = dict(mock["headers"])
+        except Exception:
+            pass
+        return out
+
+    _wasi_mock._handle_web_request = _web_request_with_headers
+except Exception:
+    pass
+
 CONTRACT = "contracts/lumen.py"
 GEN = 10**18
 PROOF_URL = "https://proof.example.org/log"
@@ -12,6 +56,8 @@ COUNTER_URL = "https://counter.example.net/what-happened"
 
 
 def hexof(a) -> str:
+    if isinstance(a, (bytes, bytearray)):  # the fixtures are raw 20-byte accounts in some harness versions
+        return "0x" + bytes(a).hex()
     v = getattr(a, "as_hex", None)
     if isinstance(v, str):
         return v.lower()
