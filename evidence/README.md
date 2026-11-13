@@ -4,13 +4,33 @@ Three kinds of file live here.
 
 | Path | What it is |
 |---|---|
-| `live-e2e/<UTC time>/` | Reports written by the live runner in `e2e/` (`npm run live`): `REPORT.md`, `report.json`, `transactions.csv`. The folder appears when someone runs it against Studionet and commits the result; see `docs/DEPLOYMENT.md`. A report here is always from a real network. A rehearsal (`npm run check`) is labelled `SELF-CHECK` and is never written here. |
+| `live-e2e/<UTC time>/` | Reports written by the live runner in `e2e/` (`npm run live`): `REPORT.md`, `report.json`, `transactions.csv`. A report here is always from a real network. A rehearsal (`npm run check`) is labelled `SELF-CHECK` and is never written here. The folder currently holds one run, described below. |
 | `fixtures/` | The pages the live run uses as evidence (`kept.md`, `broken.md`, `counter.md`). The validators fetch them from GitHub, so they must be pushed before a run. |
 | `studionet-e2e-*.md` | Two hand-made reports of version 1 of the contract, described below. |
 
+# Version 2 evidence: the live end-to-end run
+
+One complete automated run on Studionet against a fresh deployment of version 2.0.0, written by `e2e/` (`npm run live`).
+
+- Contract: `0x65b24E33838f738C74304Ba6c03A3787bB0C4360`
+- Report: [`live-e2e/2026-11-13T10-13-50Z/REPORT.md`](live-e2e/2026-11-13T10-13-50Z/REPORT.md), with [`report.json`](live-e2e/2026-11-13T10-13-50Z/report.json) and [`transactions.csv`](live-e2e/2026-11-13T10-13-50Z/transactions.csv)
+- Run: 2026-11-13, 10:13:50 to 10:58:46 UTC (45 minutes), Node 24, evidence pages served from this repository on GitHub
+- Result: **PASS, 223 of 223 checks** (136 behavior, 83 invariant, 4 verdict), 82 transactions
+
+| Scenario | Result |
+|---|---|
+| `deploy` | the deployed contract reports version 2.0.0, the version in this repository |
+| `adversarial` | 105 checks: calls the contract has to refuse, each with its reason and the vow it names unchanged; five progress notes and the refusal of a sixth; a retraction and its payout |
+| `kept` | vow #1 ended KEPT; the validators proposed KEPT; keeper 0.4 GEN, faith backer 0.16 GEN claimed; the doubter was refused |
+| `broken` | vow #2 ended BROKEN; the validators proposed BROKEN; the doubter was paid 0.36 GEN; the keeper and the faith backer were refused |
+| `retract` | vow #0 retracted; 0.32 GEN claimed, 0.08 GEN burned |
+| `directory` | 5 vows cross-checked against the read model |
+
+Contract totals after the run: 5 vows (1 kept, 1 broken, 2 retracted, 1 open on purpose), 1.74 GEN deposited, 1.32 GEN paid, 0.3 GEN burned, 0.12 GEN still held by the open vow. The pages the validators read are in [`fixtures/`](fixtures/).
+
 # Version 1 evidence: two hand-run Studionet cycles
 
-Reports of two complete runs of Lumen on Studionet, against one deployment. Both runs were done by hand in GenLayer Studio (every step sent from the Studio interface by the project author, who wrote the reports from the results), not by the `npm run e2e` script. Every transaction hash below can be looked up in the explorer.
+Reports of two complete runs of Lumen version 1 on Studionet, against one version 1 deployment (it does not work with the version 2 app). Both runs were done by hand in GenLayer Studio (every step sent from the Studio interface by the project author, who wrote the reports from the results), not by the `npm run e2e` script. Every transaction hash below can be looked up in the explorer.
 
 - Contract: `0x0FDa5D58327DD482bCE2C3673f4295d0E891F75D`
 - [`studionet-e2e-kept.md`](studionet-e2e-kept.md): vow #0 ends **KEPT**. `make_vow` (2.0 GEN stake), `back` (1.0 GEN faith), `judge`, `finalize`, then `claim` by the keeper (2.0 GEN) and by the faith backer (1.0 GEN).
