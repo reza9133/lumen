@@ -113,7 +113,7 @@ npm run dev</code></pre>
           <p>With no contract address configured the app runs in rehearsal mode: sample vows live in the page, every action works against them and nothing is sent to a chain. Add <code>?demo</code> to the address to force it.</p>
 
           <h3>1. Deploy the contract</h3>
-          <div class="callout warn"><strong>Version 2 needs a new deployment.</strong> The way a vow is stored changed, so a contract deployed from version 1 cannot be read by this app and cannot be upgraded in place. Deploy a fresh one and use its address.</div>
+          <div class="callout warn"><strong>Version 2 needs a new deployment.</strong> The way a vow is stored changed, so a contract deployed from version 1 cannot be read by this app and cannot be upgraded in place. Deploy a fresh one and use its address. Version 2.0.0 is deployed on Studionet at <code>0x65b24E33838f738C74304Ba6c03A3787bB0C4360</code>.</div>
           <pre><code>pip install -r requirements.txt
 genvm-lint check contracts/lumen.py
 
@@ -647,7 +647,7 @@ RETRACTED keeper : stake - stake/5
             <thead><tr><th>Build</th><th>JavaScript, gzipped</th></tr></thead>
             <tbody>
               <tr><td>Version 1: one bundle</td><td>177 KB</td></tr>
-              <tr><td>Version 2: the app</td><td>86 KB</td></tr>
+              <tr><td>Version 2: the app</td><td>89 KB</td></tr>
               <tr><td>Version 2: chain SDK, fetched on the first chain read</td><td>101 KB</td></tr>
               <tr><td>Version 2: 3D engine, fetched only on the space page</td><td>127 KB</td></tr>
             </tbody>
@@ -730,6 +730,8 @@ E2E_COMMIT=push npm run live       # the same, then commits and pushes the repor
             </tbody>
           </table>
           <p>The evidence pages are in <code>evidence/fixtures/</code> and must be pushed to GitHub before a run, because the validators read them from there. The run checks that they can be fetched first. The report goes to <code>evidence/live-e2e/&lt;time&gt;/</code> as Markdown, CSV and JSON; the exit code is 0 when everything held, 1 when a money rule or a contract behavior failed, and 2 when only a language-model verdict differed from the expected one (validators can legitimately differ between runs). A run that cannot start, for example because the fixture pages are not online yet, stops before it spends anything.</p>
+          <h3>The first live result</h3>
+          <p>The runner was played once against a fresh deployment of version 2.0.0 on Studionet, <code>0x65b24E33838f738C74304Ba6c03A3787bB0C4360</code>. It passed 223 of 223 checks over 82 transactions: one vow kept, one broken, two retracted and one left open on purpose, every payout equal to the independent calculation (1.74 GEN deposited, 1.32 GEN paid, 0.3 GEN burned, 0.12 GEN still in the open vow). The report, with every transaction hash, is in <code>evidence/live-e2e/2026-11-13T10-13-50Z/</code> in the repository.</p>
           <p>Because the real network cannot be reached from every place, the runner can rehearse itself: <code>npm run check</code> runs the same scenarios against the real contract in memory, with a virtual clock. The report of such a run says <em>SELF-CHECK</em> at the top and is never a live result. <code>npm run check:mutations</code> breaks the contract in nine ways and fails if the runner does not notice each one. All settings are described in <code>e2e/README.md</code>.</p>
         </section>
 
