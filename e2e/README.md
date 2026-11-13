@@ -6,7 +6,7 @@ statement of the rules, and writes a report you can commit.
 ```bash
 cd e2e
 npm ci
-npm run live            # about 30 to 45 minutes, nothing to type
+npm run live            # about 45 minutes, nothing to type
 ```
 
 ## Before the first run

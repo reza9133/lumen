@@ -1,5 +1,9 @@
 # Deployment and live testing
 
+## The deployed contract
+
+Version 2.0.0 is deployed on Studionet at `0x65b24E33838f738C74304Ba6c03A3787bB0C4360`. The live end-to-end run was played against it and passed 223 of 223 checks; the report is in [`evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md`](../evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md). To use it, set `VITE_LUMEN_ADDRESS=0x65b24E33838f738C74304Ba6c03A3787bB0C4360` in `frontend/.env`. Anyone can also deploy their own copy as described below.
+
 ## Look around without a contract
 
 ```bash
@@ -68,7 +72,7 @@ cd e2e
 npm run live
 ```
 
-It takes about 45 to 75 minutes, mostly waiting for deadlines and for the validators. The Studionet RPC refuses more than 30 requests a minute, so the run keeps to 24 (`E2E_RPC_PER_MIN`) and looks up a pending transaction every 15 seconds (`E2E_POLL_SECS`); a request that is refused anyway is repeated after a pause. It will:
+It takes about 45 minutes (the committed run took 45), mostly waiting for deadlines and for the validators. The Studionet RPC refuses more than 30 requests a minute, so the run keeps to 24 (`E2E_RPC_PER_MIN`) and looks up a pending transaction every 15 seconds (`E2E_POLL_SECS`); a request that is refused anyway is repeated after a pause. It will:
 
 1. check the fixture pages;
 2. create one account per role (kept in `e2e/.accounts.json`, which is git-ignored) and fund them with the Studio faucet. If the faucet refuses, it prints the addresses and waits for you to fund them;

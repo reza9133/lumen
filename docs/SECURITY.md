@@ -2,7 +2,7 @@
 
 What the design defends against, what it deliberately does not, and what to do before staking real value. The protocol reasoning behind each rule is in `docs/PROTOCOL.md`.
 
-> **Before staking real value**, exercise the wording of the judging prompt (`_prompt` in the contract) on Studionet with real pages. The in-memory tests fix what the model "says"; only a live run shows what it says.
+> **Before staking real value**, exercise the wording of the judging prompt (`_prompt` in the contract) on Studionet with real pages. The in-memory tests fix what the model "says"; only a live run shows what it says. One live run exists (`evidence/live-e2e/2026-11-13T10-13-50Z/`): the validators proposed KEPT for the fixture page that shows the work and BROKEN for the one that shows nothing. That is one run on three fixture pages, not a guarantee for other pages.
 
 ## Assets and who can touch them
 

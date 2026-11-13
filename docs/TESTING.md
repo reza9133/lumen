@@ -71,8 +71,12 @@ The longer run (about five seconds a seed) was done over seeds 7000 to 7119 at 1
 
 The runner in `e2e/` is tested before it is trusted with a network:
 
-- `cd e2e && npm test` runs 28 tests of its payout oracle, report writer, configuration and its agreement with the contract (method names, argument counts, revert reasons, fixtures).
-- `npm run check` plays all five scenarios against the real contract in memory with a virtual clock (222 checks). Its report is labelled `SELF-CHECK` and is never a live result.
+- `cd e2e && npm test` runs 34 tests of its payout oracle, report writer, configuration and its agreement with the contract (method names, argument counts, revert reasons, fixtures).
+- `npm run check` plays all five scenarios against the real contract in memory with a virtual clock (222 checks; the live run has one more, the deployed version check). Its report is labelled `SELF-CHECK` and is never a live result.
 - `npm run check:mutations` breaks the contract in nine ways (a retraction that burns a quarter, a retraction after the deadline, a keeper who can back their own vow, faith that is not capped, a kept vow that pays doubters, a broken vow that burns everything, a claim that works twice, a feed that forgets notes, a claim during review) and requires the runner to fail each time. All nine are caught.
 
 See `e2e/README.md` and `docs/DEPLOYMENT.md` for running it on Studionet.
+
+## The live run on Studionet
+
+`npm run live` ran once against a fresh deployment, `0x65b24E33838f738C74304Ba6c03A3787bB0C4360`, on 2026-11-13 (45 minutes). Result: PASS, 223 of 223 checks (136 behavior, 83 invariant, 4 verdict), 82 transactions, 5 vows. The report, with every transaction hash and the payouts of each account, is in [`evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md`](../evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md), with `report.json` and `transactions.csv` beside it.

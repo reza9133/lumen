@@ -12,13 +12,17 @@
   </a>
 </p>
 
-<p align="center"><b>Built on GenLayer</b> &middot; <a href="https://github.com/reza9133/lumen">GitHub</a> &middot; <a href="docs/MILESTONE.md">What is new in v2</a> &middot; <a href="frontend/docs.html">In-app documentation</a></p>
+<p align="center"><b>Built on GenLayer</b> &middot; <a href="https://github.com/reza9133/lumen">GitHub</a> &middot; <a href="docs/MILESTONE.md">What is new in v2</a> &middot; <a href="CHANGELOG.md">Changelog</a> &middot; <a href="frontend/docs.html">In-app documentation</a></p>
 
 # Lumen
 
 Public vows, judged by validators. Write a promise, stake GEN behind it and point to the page that will prove it. After the deadline every GenLayer validator reads that page and rules whether the vow was kept. Friends back it with faith, skeptics bet against it, and every broken vow sends embers drifting down the sky.
 
 Version 2 adds retraction, public progress notes, an activity feed, keeper tiers and an incremental sync that makes an idle client read 25 bytes instead of about 30 KB. The app has a keeper directory, keeper pages, a protocol page with a payout calculator, pulse charts and a 3D view, and it runs on sample data until you give it a contract.
+
+## Live on Studionet
+
+Version 2.0.0 is deployed at `0x65b24E33838f738C74304Ba6c03A3787bB0C4360`. A full automated run against it passed 223 of 223 checks (82 transactions; kept, broken and retracted vows; every payout equal to an independent calculation). The report is in [`evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md`](evidence/live-e2e/2026-11-13T10-13-50Z/REPORT.md). To point the app at it, put `VITE_LUMEN_ADDRESS=0x65b24E33838f738C74304Ba6c03A3787bB0C4360` in `frontend/.env`.
 
 ## Screenshots
 
@@ -66,11 +70,12 @@ The full protocol, with the reasoning behind every rule, is in [`docs/PROTOCOL.m
 | [`frontend/`](frontend/) | Vite and React app, the in-app documentation page and the browser smoke test |
 | [`tests/direct/`](tests/direct/) | In-memory contract tests: unit, economics, adversarial, fuzz and contract-to-frontend parity |
 | [`e2e/`](e2e/) | The live end-to-end runner for Studionet, built for GitHub Codespaces, with its offline self-check |
-| [`evidence/`](evidence/) | The pages the live run reads, and the reports |
+| [`evidence/`](evidence/) | The pages the live run reads, and the reports (the live Studionet run of version 2 and two hand-run cycles of version 1) |
 | [`docs/`](docs/) | Documentation (below) |
 
 | Document | Contents |
 |---|---|
+| [`CHANGELOG.md`](CHANGELOG.md) | Release notes: what was added, changed and deployed in each version |
 | [`docs/MILESTONE.md`](docs/MILESTONE.md) | What changed from version 1 and how to verify each claim |
 | [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | How vows are judged, evidence rules, design decisions, limits |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The contract, the frontend and the runner, and how they fit |

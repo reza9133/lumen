@@ -35,12 +35,12 @@ Measured from `vite build` output (gzipped size as reported by the build), versi
 
 | Chunk | Version 1 | Version 2 | Loaded |
 |---|---|---|---|
-| Application | 177.4 KB (one bundle that includes the chain SDK) | 86.0 KB | at start |
+| Application | 177.4 KB (one bundle that includes the chain SDK) | 88.5 KB | at start |
 | Chain SDK (`genlayer-js` and its dependencies) | in the bundle above | 100.5 KB | on the first read from a chain |
 | 3D engine (`three.js` and the space page) | does not exist | 126.6 KB | only on `#/space` |
 | Other pages (keepers, activity, protocol, pulse, vow page) | do not exist | 1.5 to 3.5 KB each | when opened |
 
-So the first paint no longer waits for the SDK, and the 3D engine costs nothing unless someone opens the 3D page. In a chain-connected session that never opens the 3D page, the total transferred is about the same as before (186.5 KB against 177.4 KB) while the app has many more pages; the gain is that the application code arrives and runs first.
+So the first paint no longer waits for the SDK, and the 3D engine costs nothing unless someone opens the 3D page. In a chain-connected session that never opens the 3D page, the total transferred is about the same as before (189.0 KB against 177.4 KB) while the app has many more pages; the gain is that the application code arrives and runs first.
 
 `frontend/scripts/smoke.mjs` checks the lazy loading in a real browser: the chain SDK is not fetched in rehearsal mode, and the 3D chunk is fetched on `#/space` and on no other page.
 
